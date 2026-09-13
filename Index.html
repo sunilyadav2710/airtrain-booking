@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AHRH Train Booking</title>
+  <style>
+
+/* ---------- logged in status ---------- */
+    .sub {
+      color: red !important;   /* force red color */
+      font-weight: bold;       /* bold text */
+      text-align: center;      /* center the text */
+    }
+
+
+  .login-status {
+    color: #008000 !important;   /* force green for all text */
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+  }
+
+  .login-status b {
+    color: #006400 !important;   /* darker green for username */
+  }
+
+  .login-status a {
+    color: red !important;   /* bright green for logout link */
+    text-decoration: none;
+    font-weight: bold;
+  }
+
+  .login-status a:hover {
+    text-decoration: underline;
+  }
+
+/* ---------- root ---------- */
+    :root {
+      --navy: #0b2545;
+      --navy-deep: #071a33;
+      --rail-red: #c8102e;
+      --gold: #d9a441;
+      --green: #1e8e5a;
+      --purple: #7b3fbf;
+      --sky1: #2a6bb0;
+      --sky2: #16406e;
+      --bg: #eef1f5;
+      --card-bg: #ffffff;
+      --text: #1c2530;
+      --muted: #5c6b7a;
+      --border: #dfe3ea;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0;
+      background: var(--bg);
+      font-family: 'Segoe UI', -apple-system, Roboto, Arial, sans-serif;
+      color: var(--text);
+    }
+    body {
+      min-height: 100vh;
+      padding: 22px 14px 40px;
+      background:
+        radial-gradient(circle at 15% 0%, rgba(11,37,69,0.06), transparent 40%),
+        var(--bg);
+    }
+
+    .wrap { max-width: 600px; width: 100%; margin: 0 auto; transition: max-width .2s ease; }
+    .wrap.wide { max-width: 1080px; }
+
+    /* ---------- Brand header ---------- */
+    .brand { text-align: center; margin-bottom: 16px; }
+    .brand-badge { display: inline-flex; align-items: center; justify-content: center; gap: 10px; }
+    .brand-badge svg { width: 34px; height: 34px; flex-shrink: 0; }
+    .brand-name { font-size: 21px; font-weight: 800; letter-spacing: 0.5px; color: var(--navy); }
+    .brand-name span { color: var(--rail-red); }
+    .brand-tagline {
+      margin-top: 2px; font-size: 12px; color: var(--muted);
+      letter-spacing: 0.4px; text-transform: uppercase;
+    }
+
+    /* ---------- Decorative hero: train + airplane scene ---------- */
+    .hero {
+      border-radius: 14px; overflow: hidden; margin-bottom: 16px;
+      background: linear-gradient(180deg, var(--sky1) 0%, var(--sky2) 55%, var(--navy-deep) 100%);
+      box-shadow: 0 8px 24px rgba(11,37,69,0.25);
+    }
+    .hero svg { display: block; width: 100%; height: auto; }
+
+    /* ---------- Tab switcher (only shown once logged in) ---------- */
+    .app-tabs {
+      display: none;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .app-tabs.visible { display: flex; }
+    .app-tab {
+      flex: 1;
+      min-width: 110px;
+      text-align: center;
+      padding: 12px 10px;
+      border-radius: 10px;
+      border: 1.5px solid var(--border);
+      background: #fff;
+      color: var(--muted);
+      font-weight: 800;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all .15s ease;
+      user-select: none;
+    }
+    .app-tab.active {
+      background: var(--navy);
+      color: #fff;
+      border-color: var(--navy);
+    }
+    .app-tab.mastersheet {
+      border-color: var(--purple);
+      color: var(--purple);
+      flex: 0.9;
+    }
+    .app-tab.mastersheet:hover {
+      background: #f1e9fb;
+    }
+
+    /* ---------- Cards ---------- */
+    .card {
+      background: var(--card-bg);
+      border-radius: 14px;
+      padding: 24px 22px;
+      box-shadow: 0 6px 20px rgba(11,37,69,0.10);
+      border: 1px solid var(--border);
+    }
+    h1 { text-align: center; font-size: 19px; margin: 0 0 4px; color: var(--navy); font-weight: 700; }
+    .sub { text-align: center; color: var(--muted); font-size: 13px; margin-bottom: 18px; }
+    .sub.is-error { color: var(--rail-red); font-weight: 600; }
+
+    /* ---------- Form fields ---------- */
+    label {
+      display: block; font-size: 12px; font-weight: 600; color: var(--muted);
+      margin: 10px 0 5px; text-transform: uppercase; letter-spacing: 0.3px;
+    }
+    input, select, textarea {
+      width: 100%; padding: 11px 12px; border: 1.5px solid var(--border); border-radius: 9px;
+      font-size: 14px; font-family: inherit; background: #fbfcfd; color: var(--text);
+      transition: border-color .15s ease, box-shadow .15s ease;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none; border-color: var(--navy);
+      box-shadow: 0 0 0 3px rgba(11,37,69,0.10); background: #fff;
+    }
+    textarea { resize: vertical; min-height: 64px; }
+    .row2 { display: flex; gap: 10px; }
+    .row2 > div { flex: 1; }
+
+    button.submit {
+      width: 100%; margin-top: 20px; padding: 13px; border: none; border-radius: 9px;
+      background: var(--navy); color: #fff; font-size: 15px; font-weight: 700;
+      letter-spacing: 0.2px; cursor: pointer; transition: background .15s ease, transform .05s ease;
+    }
+    button.submit:hover { background: var(--navy-deep); }
+    button.submit:active { transform: translateY(1px); }
+    button.submit:disabled { background: #a7b0bb; cursor: not-allowed; }
+
+    .msg {
+      margin-top: 14px; padding: 11px 13px; border-radius: 9px; font-size: 13px;
+      display: none; font-weight: 600;
+    }
+    .msg.ok  { background: #e5f5ed; color: var(--green); display: block; border: 1px solid #bfe6d3; }
+    .msg.err { background: #fbe9ea; color: var(--rail-red); display: block; border: 1px solid #f2c4c9; }
+
+    /* ---------- Login status bar ---------- */
+    .login-status {
+      display: flex; align-items: center; justify-content: space-between;
+      margin: -6px 0 16px; padding: 9px 12px; background: #f2f5f9;
+      border: 1px solid var(--border); border-radius: 9px; font-size: 13px; color: var(--muted);
+    }
+    .login-status b { color: var(--navy); }
+    .login-status a { color: var(--rail-red); font-weight: 600; text-decoration: none; }
+    .login-status a:hover { text-decoration: underline; }
+
+    /* ---------- User tabs (Abid/Rizwan) ---------- */
+    .tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+    .tab {
+      flex: 1; text-align: center; padding: 11px 8px; border-radius: 9px;
+      border: 1.5px solid var(--border); cursor: pointer; font-weight: 700; font-size: 14px;
+      background: #fff; color: var(--muted); transition: all .15s ease;
+    }
+    .tab.active-abid { border-color: var(--navy); color: var(--navy); background: #e8edf5; }
+    .tab.active-riz  { border-color: var(--purple); color: var(--purple); background: #f1e9fb; }
+
+    /* ---------- Mode tabs (Booking/Expense) ---------- */
+    .modeTabs { display: flex; gap: 8px; margin-bottom: 18px; }
+    .modeTab {
+      flex: 1; text-align: center; padding: 9px; border-radius: 20px;
+      border: 1.5px solid var(--border); cursor: pointer; font-weight: 700; font-size: 13px;
+      background: #fff; color: var(--muted); transition: all .15s ease;
+    }
+    .modeTab.active { background: var(--navy); color: #fff; border-color: var(--navy); }
+
+    .section-label {
+      font-size: 11.5px; font-weight: 800; margin-top: 18px; margin-bottom: 2px;
+      color: var(--navy); text-transform: uppercase; letter-spacing: .05em;
+      border-bottom: 2px solid #eef1f5; padding-bottom: 6px;
+    }
+
+    .action-row { display: flex; gap: 10px; margin-top: 12px; }
+    .action-row button.submit { margin-top: 0; font-size: 13.5px; padding: 11px; }
+
+    /* ---------- Dashboard ---------- */
+    .dash-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
+    .dash-controls select {
+      padding: 10px 14px; border: 1.5px solid var(--border); border-radius: 9px;
+      font-size: 14px; font-weight: 700; background: #fff; color: var(--navy); width: auto;
+    }
+    .refresh-btn {
+      padding: 10px 16px; border-radius: 9px; border: 1.5px solid var(--navy);
+      background: #fff; color: var(--navy); font-weight: 700; font-size: 13px; cursor: pointer;
+    }
+    .refresh-btn:hover { background: #e8edf5; }
+
+    .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+    @media (min-width: 820px) { .cards { grid-template-columns: repeat(4, 1fr); } }
+    @media (max-width: 700px) { .cards { grid-template-columns: repeat(2, 1fr); } }
+    .stat-card {
+      background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px;
+      padding: 14px; box-shadow: 0 4px 14px rgba(11,37,69,0.06);
+    }
+    .stat-label {
+      font-size: 11px; text-transform: uppercase; letter-spacing: .04em;
+      font-weight: 700; color: var(--muted); margin-bottom: 6px;
+    }
+    .stat-value { font-size: 21px; font-weight: 800; color: var(--navy); }
+    .stat-card.gross .stat-value { color: var(--gold); }
+    .stat-card.accrued .stat-value { color: var(--sky1); }
+    .stat-card.expense .stat-value { color: var(--rail-red); }
+    .stat-card.net .stat-value { color: var(--green); }
+    .stat-card.transferred .stat-value { color: var(--purple); }
+    .stat-value.pos { color: var(--green); }
+    .stat-value.neg { color: var(--rail-red); }
+
+    .panel {
+      background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px;
+      padding: 18px; margin-bottom: 18px; box-shadow: 0 4px 14px rgba(11,37,69,0.06);
+    }
+    .panel h3 {
+      margin: 0 0 12px; font-size: 14.5px; color: var(--navy);
+      text-transform: uppercase; letter-spacing: .04em;
+    }
+
+    #chartWrap { overflow-x: auto; }
+    #chartSvg { display: block; min-width: 480px; }
+
+    .table-wrap { overflow-x: auto; overflow-y: auto; max-height: 420px; border-radius: 8px; }
+    table { border-collapse: collapse; width: 100%; table-layout: fixed; font-size: 12px; }
+    table.entry-table { font-size: 11px; }
+    th, td {
+      text-align: left; padding: 7px 6px; border-bottom: 1px solid var(--border);
+      white-space: normal; word-break: break-word; overflow-wrap: break-word;
+    }
+    th {
+      background: #f2f5f9; color: var(--navy); font-size: 10px;
+      text-transform: uppercase; letter-spacing: .02em;
+      position: sticky; top: 0; z-index: 1;
+    }
+    th.col-num, td.col-num { width: 26px; text-align: center; color: var(--muted); }
+    th.col-edit, td.col-edit { width: 40px; text-align: center; }
+    tr:hover td { background: #fafbfd; }
+    td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    td.pos { color: var(--green); font-weight: 700; }
+    td.neg { color: var(--rail-red); font-weight: 700; }
+    .empty-state { text-align: center; color: var(--muted); font-size: 13px; padding: 26px 10px; }
+
+    /* On narrow phones, even a fixed layout can't fit 8–12 columns legibly —
+       so below 640px each table row becomes its own stacked card instead,
+       with the column name shown next to its value. No horizontal scroll,
+       full width used, still easy to scan. */
+    @media (max-width: 640px) {
+      .table-wrap { max-height: 480px; }
+      table.stack, table.stack thead, table.stack tbody,
+      table.stack th, table.stack td, table.stack tr {
+        display: block;
+      }
+      table.stack thead { display: none; }
+      table.stack tr {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        margin-bottom: 8px;
+        padding: 4px 10px;
+        background: #fff;
+      }
+      table.stack tr:hover td { background: transparent; }
+      table.stack td {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 6px 0;
+        border-bottom: 1px dashed #eef1f5;
+        text-align: right;
+        font-size: 12.5px;
+      }
+      table.stack td:last-child { border-bottom: none; }
+      table.stack td::before {
+        content: attr(data-label);
+        font-weight: 700;
+        color: var(--navy);
+        text-transform: uppercase;
+        font-size: 9.5px;
+        letter-spacing: .02em;
+        text-align: left;
+        flex-shrink: 0;
+      }
+      table.stack td.col-num {
+        width: auto;
+        background: var(--navy);
+        color: #fff;
+        font-weight: 800;
+        border-radius: 6px;
+        padding: 4px 8px;
+        margin: 4px 0 2px;
+        border-bottom: none;
+      }
+      table.stack td.col-num::before { content: 'Entry #'; color: #cfe0f5; }
+      table.stack td.col-edit {
+        width: auto;
+        justify-content: flex-start;
+        border-bottom: 1px dashed #eef1f5;
+      }
+      table.stack td.col-edit::before { content: 'Select to edit'; color: var(--muted); }
+    }
+
+    footer { text-align: center; font-size: 11.5px; color: #97a2ae; margin-top: 22px; }
+
+    @media (max-width: 400px) { .card { padding: 20px 16px; } }
+  </style>
+</head>
+<body>
+
+<!-- ===================== BRAND HEADER (always visible) ===================== -->
+<div class="wrap" id="brandWrap">
+  <div class="brand">
+    <div class="brand-badge">
+      <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="14" y="10" width="36" height="34" rx="8" fill="#0b2545"/>
+        <rect x="19" y="16" width="11" height="11" rx="2" fill="#fff"/>
+        <rect x="34" y="16" width="11" height="11" rx="2" fill="#fff"/>
+        <rect x="17" y="32" width="30" height="5" rx="2.5" fill="#d9a441"/>
+        <circle cx="22" cy="48" r="4.5" fill="#1c2530"/>
+        <circle cx="42" cy="48" r="4.5" fill="#1c2530"/>
+        <rect x="10" y="44" width="44" height="4" rx="2" fill="#c8102e"/>
+        <path d="M8 55h48" stroke="#8a97a6" stroke-width="2" stroke-linecap="round"/>
+        <path d="M12 59h4M20 59h4M28 59h4M36 59h4M44 59h4" stroke="#8a97a6" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <div class="brand-name">AHRH <span>RAILWAYS AIRWAYS BOOKING</span></div>
+    </div>
+    <div class="brand-tagline">Ticket Booking &amp; Expense Management</div>
+  </div>
+
+  <!-- ===================== DECORATIVE HERO: TRAIN + PLANE ===================== -->
+  <div class="hero">
+    <svg viewBox="0 0 480 160" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="skyfade" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#2a6bb0"/>
+          <stop offset="0.55" stop-color="#16406e"/>
+          <stop offset="1" stop-color="#071a33"/>
+        </linearGradient>
+      </defs>
+      <rect width="480" height="160" fill="url(#skyfade)"/>
+      <circle cx="404" cy="34" r="16" fill="#ffe9b0" opacity="0.9"/>
+      <circle cx="404" cy="34" r="24" fill="#ffe9b0" opacity="0.18"/>
+      <g fill="#ffffff" opacity="0.22">
+        <ellipse cx="70" cy="30" rx="26" ry="9"/>
+        <ellipse cx="92" cy="24" rx="18" ry="8"/>
+        <ellipse cx="250" cy="20" rx="22" ry="7"/>
+      </g>
+      <g transform="translate(120,52) rotate(-8)">
+        <path d="M0 6 L46 0 L58 4 L46 8 L0 10 Z" fill="#f4f6f9"/>
+        <path d="M14 4 L4 -10 L11 -10 L24 3 Z" fill="#f4f6f9"/>
+        <path d="M14 10 L4 22 L11 22 L24 11 Z" fill="#f4f6f9"/>
+        <path d="M44 2 L54 -5 L57 -4 L49 4 Z" fill="#d9a441"/>
+        <circle cx="6" cy="6" r="2" fill="#16406e"/>
+      </g>
+      <g stroke="#ffffff" stroke-width="1.4" opacity="0.35">
+        <line x1="30" y1="58" x2="105" y2="52"/>
+        <line x1="30" y1="64" x2="100" y2="59"/>
+      </g>
+      <path d="M0 112 Q60 92 120 112 T240 112 T360 112 T480 112 V160 H0 Z" fill="#123963" opacity="0.75"/>
+      <rect x="0" y="140" width="480" height="6" fill="#3a3f47"/>
+      <g stroke="#5a616b" stroke-width="3">
+        <line x1="10" y1="140" x2="4" y2="150"/><line x1="40" y1="140" x2="34" y2="150"/>
+        <line x1="70" y1="140" x2="64" y2="150"/><line x1="100" y1="140" x2="94" y2="150"/>
+        <line x1="130" y1="140" x2="124" y2="150"/><line x1="160" y1="140" x2="154" y2="150"/>
+        <line x1="190" y1="140" x2="184" y2="150"/><line x1="220" y1="140" x2="214" y2="150"/>
+        <line x1="250" y1="140" x2="244" y2="150"/><line x1="280" y1="140" x2="274" y2="150"/>
+        <line x1="310" y1="140" x2="304" y2="150"/><line x1="340" y1="140" x2="334" y2="150"/>
+        <line x1="370" y1="140" x2="364" y2="150"/><line x1="400" y1="140" x2="394" y2="150"/>
+        <line x1="430" y1="140" x2="424" y2="150"/><line x1="460" y1="140" x2="454" y2="150"/>
+      </g>
+      <g>
+        <rect x="255" y="100" width="70" height="34" rx="4" fill="#0e2e52" stroke="#d9a441" stroke-width="1.5"/>
+        <rect x="330" y="100" width="70" height="34" rx="4" fill="#0e2e52" stroke="#d9a441" stroke-width="1.5"/>
+        <rect x="262" y="107" width="14" height="12" rx="1.5" fill="#ffe9b0" opacity="0.9"/>
+        <rect x="280" y="107" width="14" height="12" rx="1.5" fill="#ffe9b0" opacity="0.9"/>
+        <rect x="298" y="107" width="14" height="12" rx="1.5" fill="#ffe9b0" opacity="0.9"/>
+        <rect x="337" y="107" width="14" height="12" rx="1.5" fill="#ffe9b0" opacity="0.9"/>
+        <rect x="355" y="107" width="14" height="12" rx="1.5" fill="#ffe9b0" opacity="0.9"/>
+        <rect x="373" y="107" width="14" height="12" rx="1.5" fill="#ffe9b0" opacity="0.9"/>
+        <circle cx="268" cy="138" r="6" fill="#1c2530"/><circle cx="312" cy="138" r="6" fill="#1c2530"/>
+        <circle cx="343" cy="138" r="6" fill="#1c2530"/><circle cx="387" cy="138" r="6" fill="#1c2530"/>
+        <path d="M175 134 V108 Q175 98 186 98 H235 Q245 98 245 108 V134 Z" fill="#c8102e" stroke="#8c0a1c" stroke-width="1.5"/>
+        <rect x="188" y="106" width="18" height="13" rx="1.5" fill="#ffe9b0" opacity="0.95"/>
+        <rect x="212" y="106" width="18" height="13" rx="1.5" fill="#ffe9b0" opacity="0.95"/>
+        <rect x="160" y="124" width="17" height="10" rx="2" fill="#8c0a1c"/>
+        <rect x="150" y="116" width="8" height="18" rx="2" fill="#3a3f47"/>
+        <circle cx="187" cy="138" r="6.5" fill="#1c2530"/><circle cx="205" cy="138" r="6.5" fill="#1c2530"/>
+        <circle cx="225" cy="138" r="6.5" fill="#1c2530"/>
+        <circle cx="150" cy="100" r="7" fill="#cfd6dc" opacity="0.55"/>
+        <circle cx="138" cy="88" r="9" fill="#cfd6dc" opacity="0.45"/>
+        <circle cx="122" cy="74" r="11" fill="#cfd6dc" opacity="0.35"/>
+      </g>
+    </svg>
+  </div>
+</div>
+
+<!-- ===================== TAB SWITCHER (Entry Form / Dashboard) — hidden until login ===================== -->
+<div class="wrap" id="tabsWrap">
+  <div class="app-tabs" id="appTabs">
+    <div class="app-tab active" id="navEntry" onclick="showView('entry')">Entry Form</div>
+    <div class="app-tab" id="navDashboard" onclick="showView('dashboard')">Dashboard</div>
+    <div class="app-tab mastersheet" id="navMasterSheet" onclick="openMasterSheet()">Open MasterSheet</div>
+  </div>
+</div>
+
+<!-- ===================== LOGIN CARD (visible until logged in) ===================== -->
+<div class="wrap" id="loginWrap">
+  <div class="card" id="loginCard">
+    <h1>AHRH Booking Login</h1>
+    <div class="sub" id="loginSub">Please log in to continue</div>
+
+    <label>Username</label>
+    <select id="loginUsername" style="color: gray;" onchange="this.style.color='#1c2530';">
+      <option value="" disabled selected>Select Username</option>
+      <option value="abid">Abid</option>
+      <option value="rizwan">Rizwan</option>
+      <option value="admin">Admin</option>
+    </select>
+
+    <label>Password</label>
+    <input type="password" id="loginPassword" placeholder="Enter password" autocomplete="current-password"
+           onkeydown="if(event.key==='Enter'){ doLogin(); }">
+
+    <button type="button" class="submit" id="loginBtn" onclick="doLogin()">Login</button>
+  </div>
+</div>
+
+<!-- ===================== ENTRY FORM VIEW ===================== -->
+<div class="wrap" id="entryView" style="display:none;">
+  <form id="trainForm" onsubmit="return false;">
+    <div class="card">
+      <h1>AHRH Train Booking</h1>
+      <div class="sub">Pick user &amp; mode, fill the form and submit</div>
+
+      <div class="login-status">
+        <span>Logged in as <b id="loggedInLabel"></b></span>
+        <a href="#" onclick="logout(); return false;">Logout</a>
+      </div>
+
+      <div class="tabs">
+        <div class="tab active-abid" id="tabAbid" onclick="selectUser('abid')">Abid</div>
+        <div class="tab" id="tabRiz" onclick="selectUser('rizwan')">Rizwan</div>
+      </div>
+
+      <div class="modeTabs">
+        <div class="modeTab active" id="modeBooking" onclick="selectMode('booking')">Train Booking</div>
+        <div class="modeTab" id="modeExpense" onclick="selectMode('expense')">Expense</div>
+      </div>
+
+      <label>Date</label>
+      <input type="date" id="date">
+
+      <div id="bookingForm">
+        <div class="row2">
+          <div><label>Train No</label><input type="text" id="trainNo" placeholder="e.g. 12137"></div>
+          <div><label>Other Charges</label><input type="number" id="otherCharges" placeholder="0"></div>
+        </div>
+        <div class="row2">
+          <div><label>Boarding</label><input type="text" id="boarding" placeholder="e.g. LTT"></div>
+          <div><label>Destination</label><input type="text" id="destination" placeholder="e.g. BSP"></div>
+        </div>
+        <div id="abidFields">
+          <div class="section-label">Abid's amounts</div>
+          <div class="row2">
+            <div><label>Fare Charges (Abid)</label><input type="number" id="fareAbid" placeholder="0"></div>
+            <div><label>Commission (Abid)</label><input type="number" id="commissionAbid" placeholder="0"></div>
+          </div>
+        </div>
+        <div id="rizFields" style="display:none;">
+          <div class="section-label">Rizwan's amounts</div>
+          <div class="row2">
+            <div><label>Fare Charges (Riz)</label><input type="number" id="fareRiz" placeholder="0"></div>
+            <div><label>Commission (Riz)</label><input type="number" id="commissionRiz" placeholder="0"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="expenseForm" style="display:none;">
+        <div id="transferredWrap">
+          <label>Transferred Amount</label>
+          <input type="number" id="transferedAmount" placeholder="0">
+        </div>
+        <label>Office Expense</label>
+        <input type="number" id="officeExpense" placeholder="0">
+        <label>Comments</label>
+        <textarea id="comments" placeholder="Notes..."></textarea>
+      </div>
+
+      <button type="button" class="submit" id="submitBtn" onclick="submitForm()">Submit Entry</button>
+      <div class="msg" id="msg"></div>
+    </div>
+  </form>
+</div>
+
+<!-- ===================== DASHBOARD VIEW ===================== -->
+<div class="wrap wide" id="dashboardView" style="display:none;">
+  <h2 style="margin:0 0 4px; font-size:20px; color:var(--navy);">Reporting Dashboard</h2>
+  <div class="sub" style="margin-bottom:16px;">Day-by-day bookings, profit and expenses, straight from the ledger.</div>
+
+  <div class="dash-controls">
+    <select id="monthSelect"></select>
+    <button class="refresh-btn" id="refreshBtn" onclick="loadMonth()">Refresh</button>
+  </div>
+
+  <div class="cards">
+    <div class="stat-card"><div class="stat-label">Bookings</div><div class="stat-value" id="statBookings">—</div></div>
+    <div class="stat-card"><div class="stat-label">Booking Amount</div><div class="stat-value" id="statAmount">—</div></div>
+    <div class="stat-card gross"><div class="stat-label">Gross Profit</div><div class="stat-value" id="statGross">—</div></div>
+    <div class="stat-card expense"><div class="stat-label">Office Expense</div><div class="stat-value" id="statExpense">—</div></div>
+    <div class="stat-card net"><div class="stat-label">Net Profit</div><div class="stat-value" id="statNet">—</div></div>
+    <div class="stat-card accrued"><div class="stat-label">Accrued Amount</div><div class="stat-value" id="statAccrued">—</div></div>
+    <div class="stat-card transferred"><div class="stat-label">Transferred Amount</div><div class="stat-value" id="statTransferred">—</div></div>
+    <div class="stat-card"><div class="stat-label">Pending / Extra Transfer</div><div class="stat-value" id="statPendingTransfer">—</div></div>
+  </div>
+
+  <div class="panel">
+    <h3>Gross Profit vs Office Expense vs Net Profit</h3>
+    <div id="chartWrap"><svg id="chartSvg" viewBox="0 0 600 200"></svg></div>
+  </div>
+
+  <div class="panel">
+    <h3>Day-by-Day Summary</h3>
+    <div class="table-wrap">
+      <table id="dayTable" class="stack">
+        <thead><tr><th class="col-num">#</th><th>Date</th><th>Bookings</th><th>Amount</th><th>Gross Profit</th><th>Office Exp.</th><th>Net Profit</th><th>Transferred</th></tr></thead>
+        <tbody id="dayTableBody"></tbody>
+      </table>
+      <div class="empty-state" id="dayEmpty" style="display:none;">No entries for this month yet.</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Booking Entries</h3>
+    <div class="table-wrap">
+      <table id="entryTable" class="entry-table stack">
+        <thead><tr><th class="col-edit">Edit</th><th class="col-num">#</th><th>Date</th><th>Train No</th><th>Boarding</th><th>Destination</th><th>Fare (Abid)</th><th>Comm. (Abid)</th><th>Other</th><th>Fare (Riz)</th><th>Comm. (Riz)</th><th>Total</th><th>Gross Profit</th></tr></thead>
+        <tbody id="entryTableBody"></tbody>
+      </table>
+      <div class="empty-state" id="entryEmpty" style="display:none;">No booking entries for this month yet.</div>
+    </div>
+
+    <!-- Edit panel — appears once an editable entry's checkbox is ticked -->
+    <div id="editEntryPanel" style="display:none; margin-top:16px; border-top:1px solid var(--border); padding-top:16px;">
+      <div class="section-label" style="margin-top:0;">Edit Booking Entry</div>
+
+      <label>Date</label>
+      <input type="date" id="editDate">
+
+      <div class="row2">
+        <div><label>Train No</label><input type="text" id="editTrainNo"></div>
+        <div><label>Other Charges</label><input type="number" id="editOtherCharges"></div>
+      </div>
+      <div class="row2">
+        <div><label>Boarding</label><input type="text" id="editBoarding"></div>
+        <div><label>Destination</label><input type="text" id="editDestination"></div>
+      </div>
+      <div class="row2">
+        <div><label id="editFareLabel">Fare Charges</label><input type="number" id="editFare"></div>
+        <div><label id="editCommLabel">Commission</label><input type="number" id="editCommission"></div>
+      </div>
+
+      <div class="action-row">
+        <button type="button" class="submit" id="editSaveBtn" onclick="saveEditedEntry()">Save Changes</button>
+        <button type="button" class="submit" style="background:#8a97a6;" onclick="cancelEditEntry()">Cancel</button>
+      </div>
+      <div class="msg" id="editMsg"></div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap"><footer>AHRH Railways Airways Booking · Internal Booking System</footer></div>
+
+<script>
+  // ===================== LOGIN =====================
+  var loggedInUsername = null;
+  var loggedInRole = null;
+  var dashboardLoaded = false;
+
+  function setLoginSub(text, isError) {
+    var sub = document.getElementById('loginSub');
+    sub.textContent = text;
+    sub.className = 'sub' + (isError ? ' is-error' : '');
+  }
+
+  function doLogin() {
+    var username = document.getElementById('loginUsername').value.trim();
+    var password = document.getElementById('loginPassword').value;
+    var btn = document.getElementById('loginBtn');
+
+    if (!username || !password) {
+      setLoginSub('Please enter both username and password.', true);
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Logging in...';
+
+    google.script.run
+      .withSuccessHandler(function (res) {
+        btn.disabled = false;
+        btn.textContent = 'Login';
+        if (!res.success) {
+          setLoginSub(res.message || 'Incorrect username or password.', true);
+          document.getElementById('loginPassword').value = '';
+          return;
+        }
+        loggedInUsername = res.username;
+        loggedInRole = res.role;
+        onLoginSuccess();
+      })
+      .withFailureHandler(function (err) {
+        btn.disabled = false;
+        btn.textContent = 'Login';
+        setLoginSub((err && err.message) || 'Something went wrong. Please try again.', true);
+      })
+      .checkLogin(username, password);
+  }
+
+  function onLoginSuccess() {
+    document.getElementById('loginWrap').style.display = 'none';
+    document.getElementById('appTabs').classList.add('visible');
+    document.getElementById('loggedInLabel').textContent = loggedInUsername + ' (' + loggedInRole + ')';
+    clearMsg();
+
+    resetTabStyle('tabAbid');
+    resetTabStyle('tabRiz');
+
+    var isAdmin = String(loggedInRole).trim().toLowerCase() === 'admin';
+    if (!isAdmin && loggedInUsername === 'abid') {
+      selectUser('abid');
+      disableTab('tabRiz');
+    } else if (!isAdmin && loggedInUsername === 'rizwan') {
+      selectUser('rizwan');
+      disableTab('tabAbid');
+    } else {
+      selectUser('abid');
+    }
+
+    showView('entry');
+  }
+
+  function disableTab(tabId) {
+    var el = document.getElementById(tabId);
+    el.onclick = null;
+    el.style.opacity = '0.4';
+    el.style.cursor = 'not-allowed';
+    el.title = 'You are not authorized to enter data as this user.';
+  }
+
+  function resetTabStyle(tabId) {
+    var el = document.getElementById(tabId);
+    el.style.opacity = '';
+    el.style.cursor = 'pointer';
+    el.title = '';
+    el.onclick = tabId === 'tabAbid' ? function () { selectUser('abid'); } : function () { selectUser('rizwan'); };
+  }
+
+  function logout() {
+    loggedInUsername = null;
+    loggedInRole = null;
+    dashboardLoaded = false;
+    document.getElementById('appTabs').classList.remove('visible');
+    document.getElementById('entryView').style.display = 'none';
+    document.getElementById('dashboardView').style.display = 'none';
+    document.getElementById('loginWrap').style.display = 'block';
+    document.getElementById('loginUsername').value = '';
+    document.getElementById('loginPassword').value = '';
+    document.getElementById('loginUsername').style.color = 'gray';
+    setLoginSub('Please log in to continue', false);
+    clearMsg();
+  }
+
+  // ===================== VIEW SWITCHING (no reload — login state stays intact) =====================
+  function showView(view) {
+    if (!loggedInUsername) return; // gated behind login
+    document.getElementById('entryView').style.display = view === 'entry' ? 'block' : 'none';
+    document.getElementById('dashboardView').style.display = view === 'dashboard' ? 'block' : 'none';
+    document.getElementById('navEntry').classList.toggle('active', view === 'entry');
+    document.getElementById('navDashboard').classList.toggle('active', view === 'dashboard');
+    var wide = (view === 'dashboard');
+    document.getElementById('brandWrap').classList.toggle('wide', wide);
+    document.getElementById('tabsWrap').classList.toggle('wide', wide);
+    clearMsg();
+    if (view === 'dashboard' && !dashboardLoaded) {
+      dashboardLoaded = true;
+      initDashboard();
+    }
+  }
+
+  function clearMsg() {
+    var el = document.getElementById('msg');
+    if (!el) return;
+    el.textContent = '';
+    el.className = 'msg';
+  }
+
+
+  function openMasterSheet() {
+    window.open('https://docs.google.com/spreadsheets/d/1sMZBmhmdbziAaDCfUf2bpCr3pj-9a3oUkoDOBJ8sKtg/edit?gid=455397938#gid=455397938', '_blank');
+  }
+
+  function validateExpenseForm() {
+    var officeExpense = document.getElementById('officeExpense').value;
+    var comments = document.getElementById('comments').value;
+    var hasOfficeExpense = officeExpense.trim() !== "" && Number(officeExpense) !== 0;
+    var hasComment = comments.trim() !== "";
+    if (hasOfficeExpense !== hasComment) {
+      showMsg('Enter office expense amount and add comment.', false);
+      return false;
+    }
+    return true;
+  }
+
+  var currentUser = 'abid';
+  var currentMode = 'booking';
+
+  function todayStr() {
+    var d = new Date();
+    var m = String(d.getMonth() + 1).padStart(2, '0');
+    var day = String(d.getDate()).padStart(2, '0');
+    return d.getFullYear() + '-' + m + '-' + day;
+  }
+  document.getElementById('date').value = todayStr();
+
+  function selectUser(user) {
+    if (loggedInRole && String(loggedInRole).trim().toLowerCase() !== 'admin' &&
+        loggedInUsername && loggedInUsername !== user) {
+      return;
+    }
+    currentUser = user;
+    document.getElementById('tabAbid').className = 'tab' + (user === 'abid' ? ' active-abid' : '');
+    document.getElementById('tabRiz').className = 'tab' + (user === 'rizwan' ? ' active-riz' : '');
+    document.getElementById('abidFields').style.display = user === 'abid' ? 'block' : 'none';
+    document.getElementById('rizFields').style.display = user === 'rizwan' ? 'block' : 'none';
+    document.getElementById('transferredWrap').style.display = user === 'abid' ? 'block' : 'none';
+  }
+
+  function selectMode(mode) {
+    currentMode = mode;
+    document.getElementById('modeBooking').className = 'modeTab' + (mode === 'booking' ? ' active' : '');
+    document.getElementById('modeExpense').className = 'modeTab' + (mode === 'expense' ? ' active' : '');
+    document.getElementById('bookingForm').style.display = mode === 'booking' ? 'block' : 'none';
+    document.getElementById('expenseForm').style.display = mode === 'expense' ? 'block' : 'none';
+  }
+
+  function showMsg(text, ok) {
+    var el = document.getElementById('msg');
+    el.textContent = text;
+    el.className = 'msg ' + (ok ? 'ok' : 'err');
+  }
+
+  function submitForm() {
+    if (currentMode === 'booking') {
+      submitBooking();
+    } else {
+      if (!validateExpenseForm()) return;
+      submitExpenseForm();
+    }
+  }
+
+  function submitBooking() {
+    var btn = document.getElementById('submitBtn');
+    var payload = {
+      user: currentUser,
+      loggedInUser: loggedInUsername,
+      date: document.getElementById('date').value,
+      trainNo: document.getElementById('trainNo').value.trim(),
+      boarding: document.getElementById('boarding').value.trim(),
+      destination: document.getElementById('destination').value.trim(),
+      otherCharges: document.getElementById('otherCharges').value,
+      fareAbid: document.getElementById('fareAbid').value,
+      commissionAbid: document.getElementById('commissionAbid').value,
+      fareRiz: document.getElementById('fareRiz').value,
+      commissionRiz: document.getElementById('commissionRiz').value
+    };
+
+    if (!payload.date || !payload.trainNo || !payload.boarding || !payload.destination) {
+      showMsg('Please fill Date, Train No, Boarding and Destination.', false);
+      return;
+    }
+    var fareValue = currentUser === 'abid' ? payload.fareAbid : payload.fareRiz;
+    if (fareValue === '' || fareValue === null || fareValue === undefined) {
+      showMsg('Please fill Fare Charges.', false);
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Submitting...';
+
+    google.script.run
+      .withSuccessHandler(function (res) {
+        resetBtn();
+        showMsg('Saved to ' + res.sheet + ' — row ' + res.row + '.', true);
+        document.getElementById('trainNo').value = '';
+        document.getElementById('boarding').value = '';
+        document.getElementById('destination').value = '';
+        document.getElementById('otherCharges').value = '';
+        document.getElementById('fareAbid').value = '';
+        document.getElementById('commissionAbid').value = '';
+        document.getElementById('fareRiz').value = '';
+        document.getElementById('commissionRiz').value = '';
+        dashboardLoaded = false; // next dashboard visit re-pulls fresh totals
+      })
+      .withFailureHandler(function (err) {
+        resetBtn();
+        showMsg(err.message || 'Something went wrong.', false);
+      })
+      .submitEntry(payload);
+  }
+
+  function submitExpenseForm() {
+    var btn = document.getElementById('submitBtn');
+    var payload = {
+      user: currentUser,
+      loggedInUser: loggedInUsername,
+      date: document.getElementById('date').value,
+      transferedAmount: document.getElementById('transferedAmount').value,
+      officeExpense: document.getElementById('officeExpense').value,
+      comments: document.getElementById('comments').value.trim()
+    };
+
+    if (!payload.date) {
+      showMsg('Please pick a date.', false);
+      return;
+    }
+    if (!payload.officeExpense && !payload.transferedAmount && !payload.comments) {
+      showMsg('Enter at least one value.', false);
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Submitting...';
+
+    google.script.run
+      .withSuccessHandler(function (res) {
+        resetBtn();
+        var rowLabel = res.rows.length > 1 ? 'rows ' : 'row ';
+        showMsg('Saved to ' + res.sheet + ' — ' + rowLabel + res.rows.join(', ') + '.', true);
+        document.getElementById('transferedAmount').value = '';
+        document.getElementById('officeExpense').value = '';
+        document.getElementById('comments').value = '';
+        dashboardLoaded = false;
+      })
+      .withFailureHandler(function (err) {
+        resetBtn();
+        showMsg(err.message || 'Something went wrong.', false);
+      })
+      .submitExpense(payload);
+  }
+
+  function resetBtn() {
+    var btn = document.getElementById('submitBtn');
+    btn.disabled = false;
+    btn.textContent = 'Submit Entry';
+  }
+
+  // ===================== DASHBOARD =====================
+  var MONTH_LABELS = {
+    Jan: 'January', Feb: 'February', Mar: 'March', Apr: 'April',
+    May: 'May', June: 'June', July: 'July', Aug: 'August',
+    Sep: 'September', Oct: 'October', Nov: 'November', Dec: 'December'
+  };
+
+  function fmtMoney(n) {
+    n = Number(n) || 0;
+    return '₹' + n.toLocaleString('en-IN', { maximumFractionDigits: 0 });
+  }
+
+  function populateMonthSelect(months, preferred) {
+    var sel = document.getElementById('monthSelect');
+    sel.innerHTML = '';
+    months.forEach(function (m) {
+      var opt = document.createElement('option');
+      opt.value = m;
+      opt.textContent = MONTH_LABELS[m] || m;
+      if (m === preferred) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    sel.onchange = loadMonth;
+  }
+
+  function currentMonthSheetName() {
+    var names = ['Jan','Feb','Mar','Apr','May','June','July','Aug','Sep','Oct','Nov','Dec'];
+    return names[new Date().getMonth()];
+  }
+
+  function initDashboard() {
+    google.script.run
+      .withSuccessHandler(function (months) {
+        var pref = months.indexOf(currentMonthSheetName()) >= 0 ? currentMonthSheetName() : months[0];
+        populateMonthSelect(months, pref);
+        loadMonth();
+      })
+      .withFailureHandler(function () {
+        populateMonthSelect(['Jan','Feb','Mar','Apr','May','June','July','Aug','Sep','Oct','Nov','Dec'], currentMonthSheetName());
+        loadMonth();
+      })
+      .getMonthsWithData();
+  }
+
+  var currentDashboardMonth = '';
+  var currentEntries = [];
+
+  function loadMonth() {
+    var month = document.getElementById('monthSelect').value;
+    currentDashboardMonth = month;
+    var btn = document.getElementById('refreshBtn');
+    btn.disabled = true;
+    btn.textContent = 'Loading...';
+
+    google.script.run
+      .withSuccessHandler(function (data) {
+        btn.disabled = false;
+        btn.textContent = 'Refresh';
+        renderData(data);
+      })
+      .withFailureHandler(function (err) {
+        btn.disabled = false;
+        btn.textContent = 'Refresh';
+        alert((err && err.message) || 'Could not load data for this month.');
+      })
+      .getDashboardData(month);
+  }
+
+  function renderData(data) {
+    var t = data.totals;
+    document.getElementById('statBookings').textContent = t.bookingCount;
+    document.getElementById('statAmount').textContent = fmtMoney(t.bookingAmount);
+    document.getElementById('statGross').textContent = fmtMoney(t.grossProfit);
+    document.getElementById('statExpense').textContent = fmtMoney(t.officeExpense);
+    document.getElementById('statNet').textContent = fmtMoney(t.netProfit);
+    document.getElementById('statAccrued').textContent = fmtMoney(t.accruedAmount);
+    document.getElementById('statTransferred').textContent = fmtMoney(t.transferred);
+    var pendingEl = document.getElementById('statPendingTransfer');
+    pendingEl.textContent = fmtMoney(t.pendingExtraTransfer);
+    pendingEl.className = 'stat-value ' + (t.pendingExtraTransfer >= 0 ? 'pos' : 'neg');
+
+    currentEntries = data.entries;
+    cancelEditEntry();
+
+    renderChart(t);
+    renderDayTable(data.days);
+    renderEntryTable(data.entries);
+  }
+
+  // Three-bar comparison: Gross Profit (gold), Office Expense (red),
+  // Net Profit (green) — for the selected month. Handles a negative
+  // Net Profit by drawing that bar below the zero line.
+  function renderChart(totals) {
+    var svg = document.getElementById('chartSvg');
+    svg.innerHTML = '';
+    var w = 420, h = 220, padL = 46, padR = 16, padT = 18, padB = 30;
+    svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
+
+    var bars = [
+      { label: 'Gross Profit', value: totals.grossProfit, color: '#d9a441' },
+      { label: 'Office Expense', value: totals.officeExpense, color: '#c8102e' },
+      { label: 'Net Profit', value: totals.netProfit, color: '#1e8e5a' }
+    ];
+
+    var chartW = w - padL - padR;
+    var chartH = h - padT - padB;
+    var maxPos = Math.max.apply(null, bars.map(function (b) { return b.value; }).concat([0]));
+    var maxNeg = Math.min.apply(null, bars.map(function (b) { return b.value; }).concat([0]));
+    var range = (maxPos - maxNeg) || 1;
+    var zeroY = padT + chartH * (maxPos / range);
+
+    var zeroLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    zeroLine.setAttribute('x1', padL); zeroLine.setAttribute('y1', zeroY);
+    zeroLine.setAttribute('x2', w - padR); zeroLine.setAttribute('y2', zeroY);
+    zeroLine.setAttribute('stroke', '#dfe3ea'); zeroLine.setAttribute('stroke-width', '1');
+    svg.appendChild(zeroLine);
+
+    var slot = chartW / bars.length;
+    var barW = Math.min(70, slot * 0.5);
+
+    bars.forEach(function (b, i) {
+      var barH = (Math.abs(b.value) / range) * chartH;
+      var x = padL + i * slot + (slot - barW) / 2;
+      var y = b.value >= 0 ? zeroY - barH : zeroY;
+
+      var rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      rect.setAttribute('x', x); rect.setAttribute('y', y);
+      rect.setAttribute('width', barW); rect.setAttribute('height', Math.max(barH, 1));
+      rect.setAttribute('fill', b.color); rect.setAttribute('rx', '3');
+      var titleEl = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+      titleEl.textContent = b.label + ': ' + fmtMoney(b.value);
+      rect.appendChild(titleEl);
+      svg.appendChild(rect);
+
+      var valueLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      valueLabel.setAttribute('x', x + barW / 2);
+      valueLabel.setAttribute('y', b.value >= 0 ? y - 6 : y + barH + 14);
+      valueLabel.setAttribute('text-anchor', 'middle');
+      valueLabel.setAttribute('font-size', '11');
+      valueLabel.setAttribute('font-weight', '700');
+      valueLabel.setAttribute('fill', '#1c2530');
+      valueLabel.textContent = fmtMoney(b.value);
+      svg.appendChild(valueLabel);
+
+      var catLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      catLabel.setAttribute('x', x + barW / 2);
+      catLabel.setAttribute('y', h - 10);
+      catLabel.setAttribute('text-anchor', 'middle');
+      catLabel.setAttribute('font-size', '11');
+      catLabel.setAttribute('font-weight', '700');
+      catLabel.setAttribute('fill', '#5c6b7a');
+      catLabel.textContent = b.label;
+      svg.appendChild(catLabel);
+    });
+  }
+
+  function fmtDateDisplay(yyyyMMdd) {
+    var parts = String(yyyyMMdd || '').split('-');
+    if (parts.length !== 3) return yyyyMMdd;
+    return parts[2] + '/' + parts[1] + '/' + parts[0];
+  }
+
+  function renderDayTable(days) {
+    var body = document.getElementById('dayTableBody');
+    var empty = document.getElementById('dayEmpty');
+    body.innerHTML = '';
+    if (!days.length) { empty.style.display = 'block'; return; }
+    empty.style.display = 'none';
+
+    days.forEach(function (d, i) {
+      var tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td class="col-num" data-label="#">' + (i + 1) + '</td>' +
+        '<td data-label="Date">' + fmtDateDisplay(d.date) + '</td>' +
+        '<td class="num" data-label="Bookings">' + d.bookingCount + '</td>' +
+        '<td class="num" data-label="Amount">' + fmtMoney(d.bookingAmount) + '</td>' +
+        '<td class="num" data-label="Gross Profit">' + fmtMoney(d.grossProfit) + '</td>' +
+        '<td class="num" data-label="Office Exp.">' + fmtMoney(d.officeExpense) + '</td>' +
+        '<td class="num ' + (d.netProfit >= 0 ? 'pos' : 'neg') + '" data-label="Net Profit">' + fmtMoney(d.netProfit) + '</td>' +
+        '<td class="num" data-label="Transferred">' + fmtMoney(d.transferred) + '</td>';
+      body.appendChild(tr);
+    });
+  }
+
+  function canEditEntry(entry) {
+    if (!loggedInUsername) return false;
+    var isAdmin = String(loggedInRole).trim().toLowerCase() === 'admin';
+    if (isAdmin) return true;
+    return !!entry.owner && entry.owner === loggedInUsername;
+  }
+
+  function renderEntryTable(entries) {
+    var body = document.getElementById('entryTableBody');
+    var empty = document.getElementById('entryEmpty');
+    body.innerHTML = '';
+    if (!entries.length) { empty.style.display = 'block'; return; }
+    empty.style.display = 'none';
+
+    entries.forEach(function (e, i) {
+      var editable = canEditEntry(e);
+      var checkboxCell = editable
+        ? '<input type="checkbox" class="entry-edit-checkbox" data-index="' + i + '" onchange="onEntryCheckboxChange(this)">'
+        : '<span style="color:#c3cbd4;" title="Not your entry">—</span>';
+
+      var tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td class="col-edit" data-label="Edit">' + checkboxCell + '</td>' +
+        '<td class="col-num" data-label="#">' + (i + 1) + '</td>' +
+        '<td data-label="Date">' + fmtDateDisplay(e.date) + '</td>' +
+        '<td data-label="Train No">' + (e.trainNo || '—') + '</td>' +
+        '<td data-label="Boarding">' + (e.boarding || '—') + '</td>' +
+        '<td data-label="Destination">' + (e.destination || '—') + '</td>' +
+        '<td class="num" data-label="Fare (Abid)">' + fmtMoney(e.fareAbid) + '</td>' +
+        '<td class="num" data-label="Comm. (Abid)">' + fmtMoney(e.commAbid) + '</td>' +
+        '<td class="num" data-label="Other">' + fmtMoney(e.otherCharges) + '</td>' +
+        '<td class="num" data-label="Fare (Riz)">' + fmtMoney(e.fareRiz) + '</td>' +
+        '<td class="num" data-label="Comm. (Riz)">' + fmtMoney(e.commRiz) + '</td>' +
+        '<td class="num" data-label="Total">' + fmtMoney(e.ticketTotal) + '</td>' +
+        '<td class="num" data-label="Gross Profit">' + fmtMoney(e.grossProfit) + '</td>';
+      body.appendChild(tr);
+    });
+  }
+
+  // ===================== EDIT ENTRY WORKFLOW =====================
+  var editingIndex = null;
+
+  function onEntryCheckboxChange(checkbox) {
+    // Single-select: ticking one entry unticks any other.
+    document.querySelectorAll('.entry-edit-checkbox').forEach(function (cb) {
+      if (cb !== checkbox) cb.checked = false;
+    });
+
+    if (!checkbox.checked) {
+      cancelEditEntry();
+      return;
+    }
+
+    var index = Number(checkbox.getAttribute('data-index'));
+    openEditPanel(index);
+  }
+
+  function openEditPanel(index) {
+    var entry = currentEntries[index];
+    if (!entry) return;
+    editingIndex = index;
+
+    document.getElementById('editDate').value = entry.date; // already yyyy-MM-dd
+    document.getElementById('editTrainNo').value = entry.trainNo || '';
+    document.getElementById('editBoarding').value = entry.boarding || '';
+    document.getElementById('editDestination').value = entry.destination || '';
+    document.getElementById('editOtherCharges').value = entry.otherCharges || 0;
+
+    var isAbid = entry.owner !== 'rizwan';
+    document.getElementById('editFareLabel').textContent = 'Fare Charges (' + (isAbid ? 'Abid' : 'Riz') + ')';
+    document.getElementById('editCommLabel').textContent = 'Commission (' + (isAbid ? 'Abid' : 'Riz') + ')';
+    document.getElementById('editFare').value = isAbid ? entry.fareAbid : entry.fareRiz;
+    document.getElementById('editCommission').value = isAbid ? entry.commAbid : entry.commRiz;
+
+    var msg = document.getElementById('editMsg');
+    msg.textContent = ''; msg.className = 'msg';
+
+    document.getElementById('editEntryPanel').style.display = 'block';
+    document.getElementById('editEntryPanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function cancelEditEntry() {
+    editingIndex = null;
+    document.getElementById('editEntryPanel').style.display = 'none';
+    document.querySelectorAll('.entry-edit-checkbox').forEach(function (cb) { cb.checked = false; });
+  }
+
+  function saveEditedEntry() {
+    if (editingIndex === null) return;
+    var entry = currentEntries[editingIndex];
+    if (!entry) return;
+
+    var isAbid = entry.owner !== 'rizwan';
+    var payload = {
+      month: currentDashboardMonth,
+      row: entry.row,
+      loggedInUser: loggedInUsername,
+      loggedInRole: loggedInRole,
+      date: document.getElementById('editDate').value,
+      trainNo: document.getElementById('editTrainNo').value.trim(),
+      boarding: document.getElementById('editBoarding').value.trim(),
+      destination: document.getElementById('editDestination').value.trim(),
+      otherCharges: document.getElementById('editOtherCharges').value,
+      fareAbid: isAbid ? document.getElementById('editFare').value : 0,
+      commissionAbid: isAbid ? document.getElementById('editCommission').value : 0,
+      fareRiz: !isAbid ? document.getElementById('editFare').value : 0,
+      commissionRiz: !isAbid ? document.getElementById('editCommission').value : 0
+    };
+
+    if (!payload.date || !payload.trainNo || !payload.boarding || !payload.destination) {
+      var msg = document.getElementById('editMsg');
+      msg.textContent = 'Please fill Date, Train No, Boarding and Destination.';
+      msg.className = 'msg err';
+      return;
+    }
+
+    var btn = document.getElementById('editSaveBtn');
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+
+    google.script.run
+      .withSuccessHandler(function () {
+        btn.disabled = false;
+        btn.textContent = 'Save Changes';
+        cancelEditEntry();
+        loadMonth(); // refresh the dashboard so the table/cards/chart reflect the edit
+      })
+      .withFailureHandler(function (err) {
+        btn.disabled = false;
+        btn.textContent = 'Save Changes';
+        var msg = document.getElementById('editMsg');
+        msg.textContent = (err && err.message) || 'Could not save changes.';
+        msg.className = 'msg err';
+      })
+      .updateBookingEntry(payload);
+  }
+</script>
+
+</body>
+</html>
