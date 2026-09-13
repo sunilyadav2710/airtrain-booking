@@ -603,6 +603,29 @@
 <div class="wrap"><footer>AHRH Railways Airways Booking · Internal Booking System</footer></div>
 
 <script>
+  // ===================== SERVER CONNECTION =====================
+  // Paste your Apps Script Web App URL here (Deploy > Manage deployments >
+  // it ends in /exec). This file is now hosted on GitHub Pages, which is a
+  // plain static site with no built-in link to your script or sheet — this
+  // URL plus callServer() below are what replace google.script.run, which
+  // only works when a page is served *from inside* Apps Script itself.
+  var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyQ1gKOUp8uHZLju-rKtWJAxaEBx7MFLnLTODUh31RzG8Nlhqu2ut3GgniedA7lnwQ3/exec';
+
+  function callServer(action, params) {
+    return fetch(SCRIPT_URL, {
+      method: 'POST',
+      // text/plain avoids a CORS "preflight" request, which Apps Script
+      // web apps don't handle — keep this header exactly as is.
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(Object.assign({ action: action }, params || {}))
+    })
+      .then(function (res) { return res.json(); })
+      .then(function (json) {
+        if (!json.ok) { throw new Error(json.message || 'Server error'); }
+        return json.data;
+      });
+  }
+
   // ===================== LOGIN =====================
   var loggedInUsername = null;
   var loggedInRole = null;
@@ -627,8 +650,8 @@
     btn.disabled = true;
     btn.textContent = 'Logging in...';
 
-    google.script.run
-      .withSuccessHandler(function (res) {
+    callServer('checkLogin', { username: username, password: password })
+      .then(function (res) {
         btn.disabled = false;
         btn.textContent = 'Login';
         if (!res.success) {
@@ -640,12 +663,11 @@
         loggedInRole = res.role;
         onLoginSuccess();
       })
-      .withFailureHandler(function (err) {
+      .catch(function (err) {
         btn.disabled = false;
         btn.textContent = 'Login';
         setLoginSub((err && err.message) || 'Something went wrong. Please try again.', true);
-      })
-      .checkLogin(username, password);
+      });
   }
 
   function onLoginSuccess() {
@@ -819,8 +841,8 @@
     btn.disabled = true;
     btn.textContent = 'Submitting...';
 
-    google.script.run
-      .withSuccessHandler(function (res) {
+    callServer('submitEntry', { payload: payload })
+      .then(function (res) {
         resetBtn();
         showMsg('Saved to ' + res.sheet + ' — row ' + res.row + '.', true);
         document.getElementById('trainNo').value = '';
@@ -833,11 +855,10 @@
         document.getElementById('commissionRiz').value = '';
         dashboardLoaded = false; // next dashboard visit re-pulls fresh totals
       })
-      .withFailureHandler(function (err) {
+      .catch(function (err) {
         resetBtn();
         showMsg(err.message || 'Something went wrong.', false);
-      })
-      .submitEntry(payload);
+      });
   }
 
   function submitExpenseForm() {
@@ -863,8 +884,8 @@
     btn.disabled = true;
     btn.textContent = 'Submitting...';
 
-    google.script.run
-      .withSuccessHandler(function (res) {
+    callServer('submitExpense', { payload: payload })
+      .then(function (res) {
         resetBtn();
         var rowLabel = res.rows.length > 1 ? 'rows ' : 'row ';
         showMsg('Saved to ' + res.sheet + ' — ' + rowLabel + res.rows.join(', ') + '.', true);
@@ -873,11 +894,10 @@
         document.getElementById('comments').value = '';
         dashboardLoaded = false;
       })
-      .withFailureHandler(function (err) {
+      .catch(function (err) {
         resetBtn();
         showMsg(err.message || 'Something went wrong.', false);
-      })
-      .submitExpense(payload);
+      });
   }
 
   function resetBtn() {
@@ -917,17 +937,16 @@
   }
 
   function initDashboard() {
-    google.script.run
-      .withSuccessHandler(function (months) {
+    callServer('getMonthsWithData', {})
+      .then(function (months) {
         var pref = months.indexOf(currentMonthSheetName()) >= 0 ? currentMonthSheetName() : months[0];
         populateMonthSelect(months, pref);
         loadMonth();
       })
-      .withFailureHandler(function () {
+      .catch(function () {
         populateMonthSelect(['Jan','Feb','Mar','Apr','May','June','July','Aug','Sep','Oct','Nov','Dec'], currentMonthSheetName());
         loadMonth();
-      })
-      .getMonthsWithData();
+      });
   }
 
   var currentDashboardMonth = '';
@@ -940,18 +959,17 @@
     btn.disabled = true;
     btn.textContent = 'Loading...';
 
-    google.script.run
-      .withSuccessHandler(function (data) {
+    callServer('getDashboardData', { month: month })
+      .then(function (data) {
         btn.disabled = false;
         btn.textContent = 'Refresh';
         renderData(data);
       })
-      .withFailureHandler(function (err) {
+      .catch(function (err) {
         btn.disabled = false;
         btn.textContent = 'Refresh';
         alert((err && err.message) || 'Could not load data for this month.');
-      })
-      .getDashboardData(month);
+      });
   }
 
   function renderData(data) {
@@ -1190,21 +1208,20 @@
     btn.disabled = true;
     btn.textContent = 'Saving...';
 
-    google.script.run
-      .withSuccessHandler(function () {
+    callServer('updateBookingEntry', { payload: payload })
+      .then(function () {
         btn.disabled = false;
         btn.textContent = 'Save Changes';
         cancelEditEntry();
         loadMonth(); // refresh the dashboard so the table/cards/chart reflect the edit
       })
-      .withFailureHandler(function (err) {
+      .catch(function (err) {
         btn.disabled = false;
         btn.textContent = 'Save Changes';
         var msg = document.getElementById('editMsg');
         msg.textContent = (err && err.message) || 'Could not save changes.';
         msg.className = 'msg err';
-      })
-      .updateBookingEntry(payload);
+      });
   }
 </script>
 
