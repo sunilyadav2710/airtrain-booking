@@ -665,7 +665,7 @@
 
   <!-- ---------- Section 1: Monthly Summary (mirrors the Dashboard sheet) ---------- -->
   <div class="panel">
-    <h3>Monthly Summary</h3>
+    <h3>Monthly Net Profit Summary</h3>
     <div class="chart-caption">Net Profit by month</div>
     <div class="chart-legend">
       <span class="item"><span class="dot" style="background:#1e8e5a;"></span>Net Profit (Profit)</span>
@@ -1227,7 +1227,7 @@
   function renderMonthlyChart(months) {
     var svg = document.getElementById('reportMonthlyChartSvg');
     svg.innerHTML = '';
-    var w = 700, h = 220, padL = 46, padR = 16, padT = 18, padB = 30;
+    var w = 700, h = 220, padL = 46, padR = 16, padT = 30, padB = 30;
     svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
 
     var bars = months.map(function (m) { return { label: m.month, value: m.netProfit }; });
@@ -1260,6 +1260,16 @@
       titleEl.textContent = b.label + ' — Net Profit: ' + fmtMoney(b.value);
       rect.appendChild(titleEl);
       svg.appendChild(rect);
+
+      var valueLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      valueLabel.setAttribute('x', x + barW / 2);
+      valueLabel.setAttribute('y', b.value >= 0 ? Math.max(y - 6, 12) : y + barH + 14);
+      valueLabel.setAttribute('text-anchor', 'middle');
+      valueLabel.setAttribute('font-size', '10');
+      valueLabel.setAttribute('font-weight', '700');
+      valueLabel.setAttribute('fill', '#1c2530');
+      valueLabel.textContent = fmtMoney(b.value);
+      svg.appendChild(valueLabel);
 
       var catLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
       catLabel.setAttribute('x', x + barW / 2);
