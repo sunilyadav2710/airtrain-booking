@@ -607,7 +607,7 @@
 
   <div class="panel">
     <h3>Expense Entries</h3>
-    <div class="sub" style="margin-bottom:10px;">Transferred Amount, Office Expense and Comments. Transferred Amount only applies to Abid's entries.</div>
+    <div class="sub" style="margin-bottom:10px;">Transferred Amount, Office Expense and Comments. Transferred Amount is visible to everyone but only Abid/Admin can edit it — Office Expense &amp; Comments are only editable by whoever entered them (or Admin).</div>
     <div class="table-wrap">
       <table id="expenseTable" class="entry-table stack">
         <thead><tr><th class="col-edit">Edit</th><th class="col-num">#</th><th>Date</th><th>Transferred</th><th>Office Expense</th><th>Comments</th></tr></thead>
@@ -624,13 +624,15 @@
       <input type="date" id="editExpenseDate" disabled>
 
       <div id="editExpenseTransferredWrap">
-        <label>Transferred Amount</label>
+        <label>Transferred Amount <span id="editExpenseTransferredHint" style="font-weight:400; color:#8a97a6;"></span></label>
         <input type="number" id="editExpenseTransferred" placeholder="0">
       </div>
-      <label>Office Expense</label>
-      <input type="number" id="editExpenseOfficeExpense" placeholder="0">
-      <label>Comments</label>
-      <textarea id="editExpenseComments" placeholder="Notes..."></textarea>
+      <div id="editExpenseFieldsWrap">
+        <label>Office Expense <span id="editExpenseFieldsHint" style="font-weight:400; color:#8a97a6;"></span></label>
+        <input type="number" id="editExpenseOfficeExpense" placeholder="0">
+        <label>Comments</label>
+        <textarea id="editExpenseComments" placeholder="Notes..."></textarea>
+      </div>
 
       <div class="action-row">
         <button type="button" class="submit" id="editExpenseSaveBtn" onclick="saveEditedExpense()">Save Changes</button>
@@ -1277,9 +1279,31 @@
   }
 
   // ===================== EXPENSE ENTRIES (separate from Booking Entries) =====================
-  // Same ownership rule as canEditEntry(): Admin can edit any row; Abid
-  // can only edit rows he owns; Rizwan can only edit rows he owns.
-  // Transferred Amount only ever applies to Abid's rows.
+  // Transferred Amount and Office Expense+Comments are permissioned
+  // SEPARATELY — a single row can hold one user's Transferred Amount
+  // right next to the other user's Office Expense + Comment. See the
+  // matching comment above updateExpenseEntry in Code.gs for why.
+  //
+  //   - Transferred Amount: visible to everyone, editable only by Abid
+  //     or Admin.
+  //   - Office Expense + Comments: editable only by whoever the
+  //     comment's "- Updated by <Name>" suffix names (or Admin).
+
+  function canEditTransferred_() {
+    if (!loggedInUsername) return false;
+    if (String(loggedInRole).trim().toLowerCase() === 'admin') return true;
+    return loggedInUsername === 'abid';
+  }
+
+  function canEditExpenseFields_(entry) {
+    if (!loggedInUsername) return false;
+    if (String(loggedInRole).trim().toLowerCase() === 'admin') return true;
+    return !!entry.expenseOwner && entry.expenseOwner === loggedInUsername;
+  }
+
+  function canEditExpenseRow_(entry) {
+    return canEditTransferred_() || canEditExpenseFields_(entry);
+  }
 
   function renderExpenseTable(expenseEntries) {
     var body = document.getElementById('expenseTableBody');
@@ -1289,17 +1313,17 @@
     empty.style.display = 'none';
 
     expenseEntries.forEach(function (e, i) {
-      var editable = canEditEntry(e);
+      var editable = canEditExpenseRow_(e);
       var checkboxCell = editable
         ? '<input type="checkbox" class="expense-edit-checkbox" data-index="' + i + '" onchange="onExpenseCheckboxChange(this)">'
-        : '<span style="color:#c3cbd4;" title="Not your entry">—</span>';
+        : '<span style="color:#c3cbd4;" title="Nothing here is yours to edit">—</span>';
 
       var tr = document.createElement('tr');
       tr.innerHTML =
         '<td class="col-edit" data-label="Edit">' + checkboxCell + '</td>' +
         '<td class="col-num" data-label="#">' + (i + 1) + '</td>' +
         '<td data-label="Date">' + fmtDateDisplay(e.date) + '</td>' +
-        '<td class="num" data-label="Transferred">' + (e.owner === 'abid' ? fmtMoney(e.transferred) : '—') + '</td>' +
+        '<td class="num" data-label="Transferred">' + fmtMoney(e.transferred) + '</td>' +
         '<td class="num" data-label="Office Expense">' + fmtMoney(e.officeExpense) + '</td>' +
         '<td data-label="Comments">' + (e.comments ? escapeHtml_(e.comments) : '—') + '</td>';
       body.appendChild(tr);
@@ -1330,12 +1354,21 @@
 
     document.getElementById('editExpenseDate').value = entry.date; // display only, not editable
 
-    // Transferred Amount only applies to Abid's rows.
-    var isAbid = entry.owner === 'abid';
-    document.getElementById('editExpenseTransferredWrap').style.display = isAbid ? '' : 'none';
-    document.getElementById('editExpenseTransferred').value = entry.transferred || 0;
-    document.getElementById('editExpenseOfficeExpense').value = entry.officeExpense || 0;
-    document.getElementById('editExpenseComments').value = entry.comments || '';
+    var canTransfer = canEditTransferred_();
+    var canFields = canEditExpenseFields_(entry);
+
+    var transferredInput = document.getElementById('editExpenseTransferred');
+    transferredInput.value = entry.transferred || 0;
+    transferredInput.disabled = !canTransfer;
+    document.getElementById('editExpenseTransferredHint').textContent = canTransfer ? '' : '(view only)';
+
+    var officeInput = document.getElementById('editExpenseOfficeExpense');
+    var commentsInput = document.getElementById('editExpenseComments');
+    officeInput.value = entry.officeExpense || 0;
+    officeInput.disabled = !canFields;
+    commentsInput.value = entry.comments || '';
+    commentsInput.disabled = !canFields;
+    document.getElementById('editExpenseFieldsHint').textContent = canFields ? '' : '(view only — not your entry)';
 
     var msg = document.getElementById('editExpenseMsg');
     msg.textContent = ''; msg.className = 'msg';
@@ -1355,24 +1388,41 @@
     var entry = currentExpenseEntries[editingExpenseIndex];
     if (!entry) return;
 
-    var isAbid = entry.owner === 'abid';
+    var transferredInput = document.getElementById('editExpenseTransferred');
+    var officeInput = document.getElementById('editExpenseOfficeExpense');
+    var commentsInput = document.getElementById('editExpenseComments');
+
     var payload = {
       month: currentDashboardMonth,
       row: entry.row,
       loggedInUser: loggedInUsername,
-      loggedInRole: loggedInRole,
-      transferredAmount: isAbid ? document.getElementById('editExpenseTransferred').value : 0,
-      officeExpense: document.getElementById('editExpenseOfficeExpense').value,
-      comments: document.getElementById('editExpenseComments').value.trim()
+      loggedInRole: loggedInRole
     };
 
-    var officeExpenseNum = Number(payload.officeExpense);
-    var hasOfficeExpense = payload.officeExpense !== '' && !isNaN(officeExpenseNum) && officeExpenseNum !== 0;
-    var hasComment = payload.comments !== '';
-    if (hasOfficeExpense !== hasComment) {
-      var msg = document.getElementById('editExpenseMsg');
-      msg.textContent = 'Enter office expense amount and add comment together.';
-      msg.className = 'msg err';
+    // Only include a field if this user is actually allowed to edit it —
+    // fields left out of the payload are left untouched by the server.
+    if (!transferredInput.disabled) {
+      payload.transferredAmount = transferredInput.value;
+    }
+    if (!officeInput.disabled) {
+      payload.officeExpense = officeInput.value;
+      payload.comments = commentsInput.value.trim();
+
+      var officeExpenseNum = Number(payload.officeExpense);
+      var hasOfficeExpense = payload.officeExpense !== '' && !isNaN(officeExpenseNum) && officeExpenseNum !== 0;
+      var hasComment = payload.comments !== '';
+      if (hasOfficeExpense !== hasComment) {
+        var msg = document.getElementById('editExpenseMsg');
+        msg.textContent = 'Enter office expense amount and add comment together.';
+        msg.className = 'msg err';
+        return;
+      }
+    }
+
+    if (payload.transferredAmount === undefined && payload.officeExpense === undefined) {
+      var msg2 = document.getElementById('editExpenseMsg');
+      msg2.textContent = 'Nothing to save.';
+      msg2.className = 'msg err';
       return;
     }
 
