@@ -252,6 +252,9 @@
 
     #chartWrap { overflow-x: auto; }
     #chartSvg { display: block; min-width: 480px; }
+    #reportMonthlyChartWrap, #reportAnnualChartWrap { overflow-x: auto; margin-bottom: 14px; }
+    #reportMonthlyChartSvg { display: block; min-width: 640px; }
+    #reportAnnualChartSvg { display: block; min-width: 480px; }
 
     .table-wrap { overflow-x: auto; overflow-y: auto; max-height: 420px; border-radius: 8px; }
     table { border-collapse: collapse; width: 100%; table-layout: fixed; font-size: 12px; }
@@ -437,6 +440,7 @@
   <div class="app-tabs" id="appTabs">
     <div class="app-tab active" id="navEntry" onclick="showView('entry')">Entry Form</div>
     <div class="app-tab" id="navDashboard" onclick="showView('dashboard')">Dashboard</div>
+    <div class="app-tab" id="navReport" onclick="showView('report')">Report</div>
     <div class="app-tab mastersheet" id="navMasterSheet" onclick="openMasterSheet()">Open MasterSheet</div>
   </div>
 </div>
@@ -624,11 +628,11 @@
       <input type="date" id="editExpenseDate" disabled>
 
       <div id="editExpenseTransferredWrap">
-        <label>Transferred Amount <span id="editExpenseTransferredHint" style="font-weight:400; color:#8a97a6;"></span></label>
+        <label>Transferred Amount <span id="editExpenseTransferredHint" style="font-weight:400; color:var(--rail-red);"></span></label>
         <input type="number" id="editExpenseTransferred" placeholder="0">
       </div>
       <div id="editExpenseFieldsWrap">
-        <label>Office Expense <span id="editExpenseFieldsHint" style="font-weight:400; color:#8a97a6;"></span></label>
+        <label>Office Expense <span id="editExpenseFieldsHint" style="font-weight:400; color:var(--rail-red);"></span></label>
         <input type="number" id="editExpenseOfficeExpense" placeholder="0">
         <label>Comments</label>
         <textarea id="editExpenseComments" placeholder="Notes..."></textarea>
@@ -640,6 +644,39 @@
       </div>
       <div class="msg" id="editExpenseMsg"></div>
     </div>
+  </div>
+</div>
+
+<!-- ===================== REPORT VIEW ===================== -->
+<div class="wrap wide" id="reportView" style="display:none;">
+  <h2 style="margin:0 0 4px; font-size:20px; color:var(--navy);">Report</h2>
+  <div class="sub" style="margin-bottom:16px;">Monthly and annual totals, straight from the Dashboard &amp; MasterSheet.</div>
+
+  <button type="button" class="refresh-btn" id="reportRefreshBtn" onclick="loadReport()" style="margin-bottom:16px;">Refresh</button>
+
+  <!-- ---------- Section 1: Monthly Summary (mirrors the Dashboard sheet) ---------- -->
+  <div class="panel">
+    <h3>Monthly Summary</h3>
+    <div id="reportMonthlyChartWrap"><svg id="reportMonthlyChartSvg" viewBox="0 0 600 200"></svg></div>
+    <div class="table-wrap">
+      <table id="reportMonthlyTable" class="stack">
+        <thead><tr><th>Month</th><th>Bookings</th><th>Booking Amount</th><th>Gross Profit</th><th>Office Exp.</th><th>Net Profit</th></tr></thead>
+        <tbody id="reportMonthlyBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ---------- Section 2: Annual Summary (mirrors the MasterSheet totals) ---------- -->
+  <div class="panel">
+    <h3>Annual Summary</h3>
+    <div class="cards">
+      <div class="stat-card"><div class="stat-label">Bookings</div><div class="stat-value" id="reportAnnualBookings">—</div></div>
+      <div class="stat-card"><div class="stat-label">Booking Amount</div><div class="stat-value" id="reportAnnualAmount">—</div></div>
+      <div class="stat-card gross"><div class="stat-label">Gross Profit</div><div class="stat-value" id="reportAnnualGross">—</div></div>
+      <div class="stat-card expense"><div class="stat-label">Office Expense</div><div class="stat-value" id="reportAnnualExpense">—</div></div>
+      <div class="stat-card net"><div class="stat-label">Net Profit</div><div class="stat-value" id="reportAnnualNet">—</div></div>
+    </div>
+    <div id="reportAnnualChartWrap"><svg id="reportAnnualChartSvg" viewBox="0 0 600 200"></svg></div>
   </div>
 </div>
 
@@ -673,6 +710,7 @@
   var loggedInUsername = null;
   var loggedInRole = null;
   var dashboardLoaded = false;
+  var reportLoaded = false;
 
   function setLoginSub(text, isError) {
     var sub = document.getElementById('loginSub');
@@ -772,15 +810,21 @@
     if (!loggedInUsername) return; // gated behind login
     document.getElementById('entryView').style.display = view === 'entry' ? 'block' : 'none';
     document.getElementById('dashboardView').style.display = view === 'dashboard' ? 'block' : 'none';
+    document.getElementById('reportView').style.display = view === 'report' ? 'block' : 'none';
     document.getElementById('navEntry').classList.toggle('active', view === 'entry');
     document.getElementById('navDashboard').classList.toggle('active', view === 'dashboard');
-    var wide = (view === 'dashboard');
+    document.getElementById('navReport').classList.toggle('active', view === 'report');
+    var wide = (view === 'dashboard' || view === 'report');
     document.getElementById('brandWrap').classList.toggle('wide', wide);
     document.getElementById('tabsWrap').classList.toggle('wide', wide);
     clearMsg();
     if (view === 'dashboard' && !dashboardLoaded) {
       dashboardLoaded = true;
       initDashboard();
+    }
+    if (view === 'report' && !reportLoaded) {
+      reportLoaded = true;
+      loadReport();
     }
   }
 
@@ -1050,8 +1094,8 @@
   // Three-bar comparison: Gross Profit (gold), Office Expense (red),
   // Net Profit (green) — for the selected month. Handles a negative
   // Net Profit by drawing that bar below the zero line.
-  function renderChart(totals) {
-    var svg = document.getElementById('chartSvg');
+  function renderChart(totals, svgId) {
+    var svg = document.getElementById(svgId || 'chartSvg');
     svg.innerHTML = '';
     var w = 420, h = 220, padL = 46, padR = 16, padT = 18, padB = 30;
     svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
@@ -1107,6 +1151,102 @@
       catLabel.setAttribute('y', h - 10);
       catLabel.setAttribute('text-anchor', 'middle');
       catLabel.setAttribute('font-size', '11');
+      catLabel.setAttribute('font-weight', '700');
+      catLabel.setAttribute('fill', '#5c6b7a');
+      catLabel.textContent = b.label;
+      svg.appendChild(catLabel);
+    });
+  }
+
+  // ===================== REPORT TAB =====================
+  function loadReport() {
+    var btn = document.getElementById('reportRefreshBtn');
+    btn.disabled = true;
+    btn.textContent = 'Loading…';
+    callServer('getReportData', {})
+      .then(function (data) {
+        btn.disabled = false;
+        btn.textContent = 'Refresh';
+        renderReport(data);
+      })
+      .catch(function (err) {
+        btn.disabled = false;
+        btn.textContent = 'Refresh';
+        alert((err && err.message) || 'Could not load the report.');
+      });
+  }
+
+  function renderReport(data) {
+    // ---- Section 1: Monthly Summary ----
+    var body = document.getElementById('reportMonthlyBody');
+    body.innerHTML = '';
+    data.months.forEach(function (m) {
+      var tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td data-label="Month">' + m.month + '</td>' +
+        '<td class="num" data-label="Bookings">' + m.bookingCount + '</td>' +
+        '<td class="num" data-label="Booking Amount">' + fmtMoney(m.bookingAmount) + '</td>' +
+        '<td class="num" data-label="Gross Profit">' + fmtMoney(m.grossProfit) + '</td>' +
+        '<td class="num" data-label="Office Exp.">' + fmtMoney(m.officeExpense) + '</td>' +
+        '<td class="num ' + (m.netProfit >= 0 ? 'pos' : 'neg') + '" data-label="Net Profit">' + fmtMoney(m.netProfit) + '</td>';
+      body.appendChild(tr);
+    });
+    renderMonthlyChart(data.months);
+
+    // ---- Section 2: Annual Summary ----
+    var a = data.annual;
+    document.getElementById('reportAnnualBookings').textContent = a.bookingCount;
+    document.getElementById('reportAnnualAmount').textContent = fmtMoney(a.bookingAmount);
+    document.getElementById('reportAnnualGross').textContent = fmtMoney(a.grossProfit);
+    document.getElementById('reportAnnualExpense').textContent = fmtMoney(a.officeExpense);
+    document.getElementById('reportAnnualNet').textContent = fmtMoney(a.netProfit);
+    renderChart(a, 'reportAnnualChartSvg');
+  }
+
+  // One bar per month (Net Profit) — same drawing approach as renderChart,
+  // just with 12 categories pulled from server data instead of 3 fixed ones.
+  function renderMonthlyChart(months) {
+    var svg = document.getElementById('reportMonthlyChartSvg');
+    svg.innerHTML = '';
+    var w = 700, h = 220, padL = 46, padR = 16, padT = 18, padB = 30;
+    svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
+
+    var bars = months.map(function (m) { return { label: m.month, value: m.netProfit }; });
+    var chartW = w - padL - padR;
+    var chartH = h - padT - padB;
+    var maxPos = Math.max.apply(null, bars.map(function (b) { return b.value; }).concat([0]));
+    var maxNeg = Math.min.apply(null, bars.map(function (b) { return b.value; }).concat([0]));
+    var range = (maxPos - maxNeg) || 1;
+    var zeroY = padT + chartH * (maxPos / range);
+
+    var zeroLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    zeroLine.setAttribute('x1', padL); zeroLine.setAttribute('y1', zeroY);
+    zeroLine.setAttribute('x2', w - padR); zeroLine.setAttribute('y2', zeroY);
+    zeroLine.setAttribute('stroke', '#dfe3ea'); zeroLine.setAttribute('stroke-width', '1');
+    svg.appendChild(zeroLine);
+
+    var slot = chartW / bars.length;
+    var barW = Math.min(34, slot * 0.55);
+
+    bars.forEach(function (b, i) {
+      var barH = (Math.abs(b.value) / range) * chartH;
+      var x = padL + i * slot + (slot - barW) / 2;
+      var y = b.value >= 0 ? zeroY - barH : zeroY;
+
+      var rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      rect.setAttribute('x', x); rect.setAttribute('y', y);
+      rect.setAttribute('width', barW); rect.setAttribute('height', Math.max(barH, 1));
+      rect.setAttribute('fill', b.value >= 0 ? '#1e8e5a' : '#c8102e'); rect.setAttribute('rx', '2');
+      var titleEl = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+      titleEl.textContent = b.label + ' — Net Profit: ' + fmtMoney(b.value);
+      rect.appendChild(titleEl);
+      svg.appendChild(rect);
+
+      var catLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      catLabel.setAttribute('x', x + barW / 2);
+      catLabel.setAttribute('y', h - 10);
+      catLabel.setAttribute('text-anchor', 'middle');
+      catLabel.setAttribute('font-size', '10');
       catLabel.setAttribute('font-weight', '700');
       catLabel.setAttribute('fill', '#5c6b7a');
       catLabel.textContent = b.label;
