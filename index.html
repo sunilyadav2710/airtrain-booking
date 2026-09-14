@@ -604,6 +604,41 @@
       <div class="msg" id="editMsg"></div>
     </div>
   </div>
+
+  <div class="panel">
+    <h3>Expense Entries</h3>
+    <div class="sub" style="margin-bottom:10px;">Transferred Amount, Office Expense and Comments. Transferred Amount only applies to Abid's entries.</div>
+    <div class="table-wrap">
+      <table id="expenseTable" class="entry-table stack">
+        <thead><tr><th class="col-edit">Edit</th><th class="col-num">#</th><th>Date</th><th>Transferred</th><th>Office Expense</th><th>Comments</th></tr></thead>
+        <tbody id="expenseTableBody"></tbody>
+      </table>
+      <div class="empty-state" id="expenseEmpty" style="display:none;">No expense entries for this month yet.</div>
+    </div>
+
+    <!-- Edit panel — appears once an editable expense row's checkbox is ticked -->
+    <div id="editExpensePanel" style="display:none; margin-top:16px; border-top:1px solid var(--border); padding-top:16px;">
+      <div class="section-label" style="margin-top:0;">Edit Expense Entry</div>
+
+      <label>Date</label>
+      <input type="date" id="editExpenseDate" disabled>
+
+      <div id="editExpenseTransferredWrap">
+        <label>Transferred Amount</label>
+        <input type="number" id="editExpenseTransferred" placeholder="0">
+      </div>
+      <label>Office Expense</label>
+      <input type="number" id="editExpenseOfficeExpense" placeholder="0">
+      <label>Comments</label>
+      <textarea id="editExpenseComments" placeholder="Notes..."></textarea>
+
+      <div class="action-row">
+        <button type="button" class="submit" id="editExpenseSaveBtn" onclick="saveEditedExpense()">Save Changes</button>
+        <button type="button" class="submit" style="background:#8a97a6;" onclick="cancelEditExpense()">Cancel</button>
+      </div>
+      <div class="msg" id="editExpenseMsg"></div>
+    </div>
+  </div>
 </div>
 
 <div class="wrap"><footer>AHRH Railways Airways Booking · Internal Booking System</footer></div>
@@ -924,6 +959,12 @@
     return '₹' + n.toLocaleString('en-IN', { maximumFractionDigits: 0 });
   }
 
+  function escapeHtml_(s) {
+    return String(s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
   function populateMonthSelect(months, preferred) {
     var sel = document.getElementById('monthSelect');
     sel.innerHTML = '';
@@ -957,6 +998,7 @@
 
   var currentDashboardMonth = '';
   var currentEntries = [];
+  var currentExpenseEntries = [];
 
   function loadMonth() {
     var month = document.getElementById('monthSelect').value;
@@ -994,9 +1036,13 @@
     currentEntries = data.entries;
     cancelEditEntry();
 
+    currentExpenseEntries = data.expenseEntries || [];
+    cancelEditExpense();
+
     renderChart(t);
     renderDayTable(data.days);
     renderEntryTable(data.entries);
+    renderExpenseTable(currentExpenseEntries);
   }
 
   // Three-bar comparison: Gross Profit (gold), Office Expense (red),
@@ -1225,6 +1271,126 @@
         btn.disabled = false;
         btn.textContent = 'Save Changes';
         var msg = document.getElementById('editMsg');
+        msg.textContent = (err && err.message) || 'Could not save changes.';
+        msg.className = 'msg err';
+      });
+  }
+
+  // ===================== EXPENSE ENTRIES (separate from Booking Entries) =====================
+  // Same ownership rule as canEditEntry(): Admin can edit any row; Abid
+  // can only edit rows he owns; Rizwan can only edit rows he owns.
+  // Transferred Amount only ever applies to Abid's rows.
+
+  function renderExpenseTable(expenseEntries) {
+    var body = document.getElementById('expenseTableBody');
+    var empty = document.getElementById('expenseEmpty');
+    body.innerHTML = '';
+    if (!expenseEntries.length) { empty.style.display = 'block'; return; }
+    empty.style.display = 'none';
+
+    expenseEntries.forEach(function (e, i) {
+      var editable = canEditEntry(e);
+      var checkboxCell = editable
+        ? '<input type="checkbox" class="expense-edit-checkbox" data-index="' + i + '" onchange="onExpenseCheckboxChange(this)">'
+        : '<span style="color:#c3cbd4;" title="Not your entry">—</span>';
+
+      var tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td class="col-edit" data-label="Edit">' + checkboxCell + '</td>' +
+        '<td class="col-num" data-label="#">' + (i + 1) + '</td>' +
+        '<td data-label="Date">' + fmtDateDisplay(e.date) + '</td>' +
+        '<td class="num" data-label="Transferred">' + (e.owner === 'abid' ? fmtMoney(e.transferred) : '—') + '</td>' +
+        '<td class="num" data-label="Office Expense">' + fmtMoney(e.officeExpense) + '</td>' +
+        '<td data-label="Comments">' + (e.comments ? escapeHtml_(e.comments) : '—') + '</td>';
+      body.appendChild(tr);
+    });
+  }
+
+  var editingExpenseIndex = null;
+
+  function onExpenseCheckboxChange(checkbox) {
+    // Single-select: ticking one row unticks any other.
+    document.querySelectorAll('.expense-edit-checkbox').forEach(function (cb) {
+      if (cb !== checkbox) cb.checked = false;
+    });
+
+    if (!checkbox.checked) {
+      cancelEditExpense();
+      return;
+    }
+
+    var index = Number(checkbox.getAttribute('data-index'));
+    openEditExpensePanel(index);
+  }
+
+  function openEditExpensePanel(index) {
+    var entry = currentExpenseEntries[index];
+    if (!entry) return;
+    editingExpenseIndex = index;
+
+    document.getElementById('editExpenseDate').value = entry.date; // display only, not editable
+
+    // Transferred Amount only applies to Abid's rows.
+    var isAbid = entry.owner === 'abid';
+    document.getElementById('editExpenseTransferredWrap').style.display = isAbid ? '' : 'none';
+    document.getElementById('editExpenseTransferred').value = entry.transferred || 0;
+    document.getElementById('editExpenseOfficeExpense').value = entry.officeExpense || 0;
+    document.getElementById('editExpenseComments').value = entry.comments || '';
+
+    var msg = document.getElementById('editExpenseMsg');
+    msg.textContent = ''; msg.className = 'msg';
+
+    document.getElementById('editExpensePanel').style.display = 'block';
+    document.getElementById('editExpensePanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function cancelEditExpense() {
+    editingExpenseIndex = null;
+    document.getElementById('editExpensePanel').style.display = 'none';
+    document.querySelectorAll('.expense-edit-checkbox').forEach(function (cb) { cb.checked = false; });
+  }
+
+  function saveEditedExpense() {
+    if (editingExpenseIndex === null) return;
+    var entry = currentExpenseEntries[editingExpenseIndex];
+    if (!entry) return;
+
+    var isAbid = entry.owner === 'abid';
+    var payload = {
+      month: currentDashboardMonth,
+      row: entry.row,
+      loggedInUser: loggedInUsername,
+      loggedInRole: loggedInRole,
+      transferredAmount: isAbid ? document.getElementById('editExpenseTransferred').value : 0,
+      officeExpense: document.getElementById('editExpenseOfficeExpense').value,
+      comments: document.getElementById('editExpenseComments').value.trim()
+    };
+
+    var officeExpenseNum = Number(payload.officeExpense);
+    var hasOfficeExpense = payload.officeExpense !== '' && !isNaN(officeExpenseNum) && officeExpenseNum !== 0;
+    var hasComment = payload.comments !== '';
+    if (hasOfficeExpense !== hasComment) {
+      var msg = document.getElementById('editExpenseMsg');
+      msg.textContent = 'Enter office expense amount and add comment together.';
+      msg.className = 'msg err';
+      return;
+    }
+
+    var btn = document.getElementById('editExpenseSaveBtn');
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+
+    callServer('updateExpenseEntry', { payload: payload })
+      .then(function () {
+        btn.disabled = false;
+        btn.textContent = 'Save Changes';
+        cancelEditExpense();
+        loadMonth(); // refresh the dashboard so the table/cards/chart reflect the edit
+      })
+      .catch(function (err) {
+        btn.disabled = false;
+        btn.textContent = 'Save Changes';
+        var msg = document.getElementById('editExpenseMsg');
         msg.textContent = (err && err.message) || 'Could not save changes.';
         msg.className = 'msg err';
       });
