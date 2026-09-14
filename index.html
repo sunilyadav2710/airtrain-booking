@@ -255,6 +255,10 @@
     #reportMonthlyChartWrap, #reportAnnualChartWrap { overflow-x: auto; margin-bottom: 14px; }
     #reportMonthlyChartSvg { display: block; min-width: 640px; }
     #reportAnnualChartSvg { display: block; min-width: 480px; }
+    .chart-caption { font-size: 12px; font-weight: 700; color: var(--muted); margin: -4px 0 10px; text-transform: uppercase; letter-spacing: .03em; }
+    .chart-legend { display: flex; flex-wrap: wrap; gap: 14px; margin: 0 0 10px; }
+    .chart-legend .item { display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: var(--text); }
+    .chart-legend .dot { width: 11px; height: 11px; border-radius: 3px; flex-shrink: 0; display: inline-block; }
 
     .table-wrap { overflow-x: auto; overflow-y: auto; max-height: 420px; border-radius: 8px; }
     table { border-collapse: collapse; width: 100%; table-layout: fixed; font-size: 12px; }
@@ -557,6 +561,11 @@
 
   <div class="panel">
     <h3>Gross Profit vs Office Expense vs Net Profit</h3>
+    <div class="chart-legend">
+      <span class="item"><span class="dot" style="background:#d9a441;"></span>Gross Profit</span>
+      <span class="item"><span class="dot" style="background:#c8102e;"></span>Office Expense</span>
+      <span class="item"><span class="dot" style="background:#1e8e5a;"></span>Net Profit</span>
+    </div>
     <div id="chartWrap"><svg id="chartSvg" viewBox="0 0 600 200"></svg></div>
   </div>
 
@@ -657,6 +666,11 @@
   <!-- ---------- Section 1: Monthly Summary (mirrors the Dashboard sheet) ---------- -->
   <div class="panel">
     <h3>Monthly Summary</h3>
+    <div class="chart-caption">Net Profit by month</div>
+    <div class="chart-legend">
+      <span class="item"><span class="dot" style="background:#1e8e5a;"></span>Net Profit (Profit)</span>
+      <span class="item"><span class="dot" style="background:#c8102e;"></span>Net Profit (Loss)</span>
+    </div>
     <div id="reportMonthlyChartWrap"><svg id="reportMonthlyChartSvg" viewBox="0 0 600 200"></svg></div>
     <div class="table-wrap">
       <table id="reportMonthlyTable" class="stack">
@@ -675,6 +689,11 @@
       <div class="stat-card gross"><div class="stat-label">Gross Profit</div><div class="stat-value" id="reportAnnualGross">—</div></div>
       <div class="stat-card expense"><div class="stat-label">Office Expense</div><div class="stat-value" id="reportAnnualExpense">—</div></div>
       <div class="stat-card net"><div class="stat-label">Net Profit</div><div class="stat-value" id="reportAnnualNet">—</div></div>
+    </div>
+    <div class="chart-legend">
+      <span class="item"><span class="dot" style="background:#d9a441;"></span>Gross Profit</span>
+      <span class="item"><span class="dot" style="background:#c8102e;"></span>Office Expense</span>
+      <span class="item"><span class="dot" style="background:#1e8e5a;"></span>Net Profit</span>
     </div>
     <div id="reportAnnualChartWrap"><svg id="reportAnnualChartSvg" viewBox="0 0 600 200"></svg></div>
   </div>
