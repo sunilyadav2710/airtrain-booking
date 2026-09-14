@@ -1360,7 +1360,7 @@
     var transferredInput = document.getElementById('editExpenseTransferred');
     transferredInput.value = entry.transferred || 0;
     transferredInput.disabled = !canTransfer;
-    document.getElementById('editExpenseTransferredHint').textContent = canTransfer ? '' : '<div class="sub">(view only)</div>';
+    document.getElementById('editExpenseTransferredHint').textContent = canTransfer ? '' : '(view only)';
 
     var officeInput = document.getElementById('editExpenseOfficeExpense');
     var commentsInput = document.getElementById('editExpenseComments');
@@ -1368,7 +1368,7 @@
     officeInput.disabled = !canFields;
     commentsInput.value = entry.comments || '';
     commentsInput.disabled = !canFields;
-    document.getElementById('editExpenseFieldsHint').textContent = canFields ? '' : '<div class="sub">(view only — not your entry)</div>';
+    document.getElementById('editExpenseFieldsHint').textContent = canFields ? '' : '(view only — not your entry)';
 
     var msg = document.getElementById('editExpenseMsg');
     msg.textContent = ''; msg.className = 'msg';
