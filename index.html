@@ -619,6 +619,24 @@
   </div>
 
   <div class="panel">
+    <h3>Booking Count</h3>
+    <div class="chart-legend"><span class="item"><span class="dot" style="background:#1e8e5a;"></span>Booking Count (per day)</span></div>
+    <div id="bookingCountChartWrap" style="overflow-x:auto;"><svg id="bookingCountChartSvg"></svg></div>
+  </div>
+
+  <div class="panel">
+    <h3>Boarding Count</h3>
+    <div class="chart-legend"><span class="item"><span class="dot" style="background:#2a6bb0;"></span>Boarding Count</span></div>
+    <div id="boardingCountChartWrap" style="overflow-x:auto;"><svg id="boardingCountChartSvg"></svg></div>
+  </div>
+
+  <div class="panel">
+    <h3>Destination Count</h3>
+    <div class="chart-legend"><span class="item"><span class="dot" style="background:#7b3fbf;"></span>Destination Count</span></div>
+    <div id="destinationCountChartWrap" style="overflow-x:auto;"><svg id="destinationCountChartSvg"></svg></div>
+  </div>
+
+  <div class="panel">
     <h3>Expense Entries</h3>
     <div class="sub" style="margin-bottom:10px;">Transferred Amount, Office Expense and Comments. Transferred Amount is visible to everyone but only Abid/Admin can edit it — Office Expense &amp; Comments are only editable by whoever entered them (or Admin).</div>
     <div class="table-wrap">
@@ -1121,6 +1139,107 @@
     renderDayTable(data.days);
     renderEntryTable(data.entries);
     renderExpenseTable(currentExpenseEntries);
+
+    // Booking Count is per-day (same source as the Day-by-Day Summary's
+    // "Bookings" column). Boarding/Destination Count group the month's
+    // booking entries by matching station text.
+    renderCategoryChart('bookingCountChartSvg',
+      (data.days || []).map(function (d) { return { label: fmtDateDisplay(d.date), value: d.bookingCount }; }),
+      '#1e8e5a');
+    renderCategoryChart('boardingCountChartSvg',
+      countBy(data.entries, function (e) { return (e.boarding || '').trim(); }),
+      '#2a6bb0');
+    renderCategoryChart('destinationCountChartSvg',
+      countBy(data.entries, function (e) { return (e.destination || '').trim(); }),
+      '#7b3fbf');
+  }
+
+  // Groups items by keyFn's return value (blank results are skipped) and
+  // returns [{label, value}] in first-seen order, value = occurrence count.
+  function countBy(items, keyFn) {
+    var map = {}, order = [];
+    (items || []).forEach(function (item) {
+      var k = keyFn(item);
+      if (!k) return;
+      if (!(k in map)) { map[k] = 0; order.push(k); }
+      map[k]++;
+    });
+    return order.map(function (k) { return { label: k, value: map[k] }; });
+  }
+
+  // Generic labeled bar chart for "count per category" data — used by the
+  // Booking/Boarding/Destination Count panels. Width grows with the number
+  // of bars (horizontal-scrolls inside its wrap) so long lists stay legible.
+  function renderCategoryChart(svgId, bars, color) {
+    var svg = document.getElementById(svgId);
+    svg.innerHTML = '';
+
+    if (!bars.length) {
+      svg.setAttribute('viewBox', '0 0 480 90');
+      svg.removeAttribute('style');
+      var emptyText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      emptyText.setAttribute('x', 240); emptyText.setAttribute('y', 48);
+      emptyText.setAttribute('text-anchor', 'middle');
+      emptyText.setAttribute('font-size', '12'); emptyText.setAttribute('fill', '#8a97a6');
+      emptyText.textContent = 'No entries for this month yet.';
+      svg.appendChild(emptyText);
+      return;
+    }
+
+    var slot = 46, barW = 28;
+    var padL = 34, padR = 16, padT = 26, padB = 74;
+    var w = Math.max(480, bars.length * slot + padL + padR);
+    var h = 230;
+    var chartW = w - padL - padR, chartH = h - padT - padB;
+
+    svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
+    svg.style.display = 'block';
+    svg.style.minWidth = w + 'px';
+
+    var maxVal = Math.max.apply(null, bars.map(function (b) { return b.value; }).concat([1]));
+
+    var baseline = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    baseline.setAttribute('x1', padL); baseline.setAttribute('y1', padT + chartH);
+    baseline.setAttribute('x2', w - padR); baseline.setAttribute('y2', padT + chartH);
+    baseline.setAttribute('stroke', '#dfe3ea'); baseline.setAttribute('stroke-width', '1');
+    svg.appendChild(baseline);
+
+    bars.forEach(function (b, i) {
+      var barH = (b.value / maxVal) * chartH;
+      var x = padL + i * slot + (slot - barW) / 2;
+      var y = padT + chartH - barH;
+
+      var rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      rect.setAttribute('x', x); rect.setAttribute('y', y);
+      rect.setAttribute('width', barW); rect.setAttribute('height', Math.max(barH, 1));
+      rect.setAttribute('fill', color); rect.setAttribute('rx', '2');
+      var titleEl = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+      titleEl.textContent = b.label + ': ' + b.value;
+      rect.appendChild(titleEl);
+      svg.appendChild(rect);
+
+      var valueLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      valueLabel.setAttribute('x', x + barW / 2);
+      valueLabel.setAttribute('y', Math.max(y - 6, 12));
+      valueLabel.setAttribute('text-anchor', 'middle');
+      valueLabel.setAttribute('font-size', '10');
+      valueLabel.setAttribute('font-weight', '700');
+      valueLabel.setAttribute('fill', '#1c2530');
+      valueLabel.textContent = b.value;
+      svg.appendChild(valueLabel);
+
+      var catX = x + barW / 2, catY = padT + chartH + 14;
+      var catLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      catLabel.setAttribute('x', catX);
+      catLabel.setAttribute('y', catY);
+      catLabel.setAttribute('text-anchor', 'end');
+      catLabel.setAttribute('font-size', '10');
+      catLabel.setAttribute('font-weight', '700');
+      catLabel.setAttribute('fill', '#5c6b7a');
+      catLabel.setAttribute('transform', 'rotate(-40 ' + catX + ' ' + catY + ')');
+      catLabel.textContent = b.label;
+      svg.appendChild(catLabel);
+    });
   }
 
   // Three-bar comparison: Gross Profit (gold), Office Expense (red),
