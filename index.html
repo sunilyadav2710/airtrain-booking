@@ -250,11 +250,10 @@
       text-transform: uppercase; letter-spacing: .04em;
     }
 
-    #chartWrap { overflow-x: auto; max-width: 420px; margin: 0 auto; }
-    #chartSvg { display: block; width: 100%; min-width: 280px; }
-    #reportMonthlyChartWrap, #reportAnnualChartWrap { overflow-x: auto; margin-bottom: 14px; }
+    #chartWrap, #reportAnnualChartWrap { overflow-x: visible; max-width: 450px; margin: 0 auto 14px; }
+    #chartSvg, #reportAnnualChartSvg { display: block; width: 100%; }
+    #reportMonthlyChartWrap { overflow-x: auto; margin-bottom: 14px; }
     #reportMonthlyChartSvg { display: block; min-width: 640px; }
-    #reportAnnualChartSvg { display: block; min-width: 480px; }
     .chart-caption { font-size: 12px; font-weight: 700; color: var(--muted); margin: -4px 0 10px; text-transform: uppercase; letter-spacing: .03em; }
     .chart-legend { display: flex; flex-wrap: wrap; gap: 14px; margin: 0 0 10px; }
     .chart-legend .item { display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: var(--text); }
