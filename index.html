@@ -570,17 +570,6 @@
   </div>
 
   <div class="panel">
-    <h3>Day-by-Day Summary</h3>
-    <div class="table-wrap">
-      <table id="dayTable" class="stack">
-        <thead><tr><th class="col-num">#</th><th>Date</th><th>Bookings</th><th>Amount</th><th>Gross Profit</th><th>Office Exp.</th><th>Net Profit</th><th>Transferred</th></tr></thead>
-        <tbody id="dayTableBody"></tbody>
-      </table>
-      <div class="empty-state" id="dayEmpty" style="display:none;">No entries for this month yet.</div>
-    </div>
-  </div>
-
-  <div class="panel">
     <h3>Booking Entries</h3>
     <div class="table-wrap">
       <table id="entryTable" class="entry-table stack">
@@ -619,24 +608,6 @@
   </div>
 
   <div class="panel">
-    <h3>Booking Count</h3>
-    <div class="chart-legend"><span class="item"><span class="dot" style="background:#1e8e5a;"></span>Booking Count (per day)</span></div>
-    <div id="bookingCountChartWrap" style="overflow-x:auto;"><svg id="bookingCountChartSvg"></svg></div>
-  </div>
-
-  <div class="panel">
-    <h3>Boarding Count</h3>
-    <div class="chart-legend"><span class="item"><span class="dot" style="background:#2a6bb0;"></span>Boarding Count</span></div>
-    <div id="boardingCountChartWrap" style="overflow-x:auto;"><svg id="boardingCountChartSvg"></svg></div>
-  </div>
-
-  <div class="panel">
-    <h3>Destination Count</h3>
-    <div class="chart-legend"><span class="item"><span class="dot" style="background:#7b3fbf;"></span>Destination Count</span></div>
-    <div id="destinationCountChartWrap" style="overflow-x:auto;"><svg id="destinationCountChartSvg"></svg></div>
-  </div>
-
-  <div class="panel">
     <h3>Expense Entries</h3>
     <div class="sub" style="margin-bottom:10px;">Transferred Amount, Office Expense and Comments. Transferred Amount is visible to everyone but only Abid/Admin can edit it — Office Expense &amp; Comments are only editable by whoever entered them (or Admin).</div>
     <div class="table-wrap">
@@ -671,6 +642,35 @@
       </div>
       <div class="msg" id="editExpenseMsg"></div>
     </div>
+  </div>
+
+  <div class="panel">
+    <h3>Day-by-Day Summary</h3>
+    <div class="table-wrap">
+      <table id="dayTable" class="stack">
+        <thead><tr><th class="col-num">#</th><th>Date</th><th>Bookings</th><th>Amount</th><th>Gross Profit</th><th>Office Exp.</th><th>Net Profit</th><th>Transferred</th></tr></thead>
+        <tbody id="dayTableBody"></tbody>
+      </table>
+      <div class="empty-state" id="dayEmpty" style="display:none;">No entries for this month yet.</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Day-Wise Total Booking</h3>
+    <div class="chart-legend"><span class="item"><span class="dot" style="background:#1e8e5a;"></span>Day-Wise Total Booking</span></div>
+    <div id="bookingCountChartWrap" style="overflow-x:auto;"><svg id="bookingCountChartSvg"></svg></div>
+  </div>
+
+  <div class="panel">
+    <h3>Total Boarding Train</h3>
+    <div class="chart-legend"><span class="item"><span class="dot" style="background:#2a6bb0;"></span>Total Boarding Train</span></div>
+    <div id="boardingCountChartWrap" style="overflow-x:auto;"><svg id="boardingCountChartSvg"></svg></div>
+  </div>
+
+  <div class="panel">
+    <h3>Total Destination Train</h3>
+    <div class="chart-legend"><span class="item"><span class="dot" style="background:#7b3fbf;"></span>Total Destination Train</span></div>
+    <div id="destinationCountChartWrap" style="overflow-x:auto;"><svg id="destinationCountChartSvg"></svg></div>
   </div>
 </div>
 
