@@ -502,8 +502,8 @@
           <div><label>Other Charges</label><input type="number" id="otherCharges" placeholder="0"></div>
         </div>
         <div class="row2">
-          <div><label>Boarding</label><input type="text" id="boarding" placeholder="e.g. LTT"></div>
-          <div><label>Destination</label><input type="text" id="destination" placeholder="e.g. BSP"></div>
+          <div><label>Boarding</label><input type="text" id="boarding" placeholder="e.g. LTT" style="text-transform:uppercase;" oninput="sanitizeStationInput(this)"></div>
+          <div><label>Destination</label><input type="text" id="destination" placeholder="e.g. BSP" style="text-transform:uppercase;" oninput="sanitizeStationInput(this)"></div>
         </div>
         <div id="abidFields">
           <div class="section-label">Abid's amounts</div>
@@ -602,8 +602,8 @@
         <div><label>Other Charges</label><input type="number" id="editOtherCharges"></div>
       </div>
       <div class="row2">
-        <div><label>Boarding</label><input type="text" id="editBoarding"></div>
-        <div><label>Destination</label><input type="text" id="editDestination"></div>
+        <div><label>Boarding</label><input type="text" id="editBoarding" style="text-transform:uppercase;" oninput="sanitizeStationInput(this)"></div>
+        <div><label>Destination</label><input type="text" id="editDestination" style="text-transform:uppercase;" oninput="sanitizeStationInput(this)"></div>
       </div>
       <div class="row2">
         <div><label id="editFareLabel">Fare Charges</label><input type="number" id="editFare"></div>
@@ -925,8 +925,8 @@
       loggedInUser: loggedInUsername,
       date: document.getElementById('date').value,
       trainNo: document.getElementById('trainNo').value.trim(),
-      boarding: document.getElementById('boarding').value.trim(),
-      destination: document.getElementById('destination').value.trim(),
+      boarding: document.getElementById('boarding').value.trim().toUpperCase().replace(/[^A-Z ]/g, ''),
+      destination: document.getElementById('destination').value.trim().toUpperCase().replace(/[^A-Z ]/g, ''),
       otherCharges: document.getElementById('otherCharges').value,
       fareAbid: document.getElementById('fareAbid').value,
       commissionAbid: document.getElementById('commissionAbid').value,
@@ -1028,6 +1028,19 @@
     return String(s)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  // Boarding/Destination: uppercase, letters + spaces only (no digits or
+  // symbols) — strips anything else as the user types.
+  function sanitizeStationInput(el) {
+    var pos = el.selectionStart;
+    var before = el.value.length;
+    el.value = el.value.toUpperCase().replace(/[^A-Z ]/g, '');
+    var removed = before - el.value.length;
+    if (pos !== null) {
+      var newPos = Math.max(0, pos - removed);
+      el.setSelectionRange(newPos, newPos);
+    }
   }
 
   function populateMonthSelect(months, preferred) {
@@ -1411,8 +1424,8 @@
       loggedInRole: loggedInRole,
       date: document.getElementById('editDate').value,
       trainNo: document.getElementById('editTrainNo').value.trim(),
-      boarding: document.getElementById('editBoarding').value.trim(),
-      destination: document.getElementById('editDestination').value.trim(),
+      boarding: document.getElementById('editBoarding').value.trim().toUpperCase().replace(/[^A-Z ]/g, ''),
+      destination: document.getElementById('editDestination').value.trim().toUpperCase().replace(/[^A-Z ]/g, ''),
       otherCharges: document.getElementById('editOtherCharges').value,
       fareAbid: isAbid ? document.getElementById('editFare').value : 0,
       commissionAbid: isAbid ? document.getElementById('editCommission').value : 0,
